@@ -3,7 +3,8 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+# npm install (not ci): upstream lockfile drifts from package.json at times
+RUN npm install --no-audit --no-fund
 
 COPY . .
 

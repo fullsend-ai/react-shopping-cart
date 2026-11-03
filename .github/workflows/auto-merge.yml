@@ -4,23 +4,39 @@
 # automatically — completing issue -> triage -> code -> review -> merge
 # with no human step. (GitHub requires auto-merge to be enabled per PR,
 # and the agent does not click it itself.)
+#
+# Authorized by issue #11. Accepted risk (demo repository): the human merge
+# gate is intentionally removed for agent-authored PRs.
 name: enable auto-merge for agent PRs
 
 on:
   pull_request_target:
-    types: [opened]
+    types: [opened, ready_for_review, reopened]
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   enable-auto-merge:
-    if: github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
+    # Retry-friendly: ready_for_review covers drafts marked ready, reopened
+    # covers close/reopen cycles. Draft PRs are skipped (GitHub rejects
+    # auto-merge on drafts); the ready_for_review trigger picks them up later.
+    if: >-
+      github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
+      && !github.event.pull_request.draft
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - name: Enable auto-merge (squash)
+      - name: Verify the review gate is active, then arm auto-merge
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: |
+          set -euo pipefail
+          state=$(gh pr view "$PR_URL" --json mergeStateStatus --jq .mergeStateStatus)
+          if [ "$state" != "BLOCKED" ]; then
+            echo "::error::Refusing to enable auto-merge: mergeStateStatus is ${state}, expected BLOCKED (branch protection must gate the merge)."
+            exit 1
+          fi
+          gh pr merge --auto --squash "$PR_URL"

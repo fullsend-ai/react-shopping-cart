@@ -1,4 +1,4 @@
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, screen } from '@testing-library/react';
 
 import Checkbox from '.';
 
@@ -13,15 +13,15 @@ describe('[commons] - Checkbox', () => {
   };
 
   test('should render correctly with label and a checkmark', () => {
-    const { container, getByText } = setup();
+    setup();
 
-    expect(getByText(mockLabel)).toBeInTheDocument();
-    expect(container.querySelector('.checkmark')).toBeTruthy();
+    expect(screen.getByText(mockLabel)).toBeInTheDocument();
+    expect(screen.getByText(mockLabel)).toHaveClass('checkmark');
   });
 
   test('should toggle checked when clicked', () => {
-    const { getByTestId } = setup();
-    const checkbox = getByTestId('checkbox');
+    setup();
+    const checkbox = screen.getByTestId('checkbox');
 
     expect(checkbox).not.toBeChecked();
     fireEvent.click(checkbox);

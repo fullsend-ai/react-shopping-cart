@@ -12,6 +12,11 @@ roles:
     - fix
     - retro
     - prioritize
+agents:
+    # Demo: repo-local triage overlay that auto-promotes every sufficient
+    # issue (all categories) to ready-to-code. See .fullsend/triage.yaml.
+    - name: triage
+      source: triage.yaml
 allowed_remote_resources:
     - https://raw.githubusercontent.com/fullsend-ai/fullsend/
     - https://raw.githubusercontent.com/fullsend-ai/agents/

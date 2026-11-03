@@ -1,3 +1,4 @@
+import { screen } from '@testing-library/react';
 import { renderWithThemeProvider } from 'utils/test/test-utils';
 import { mockCartProducts } from 'utils/test/mocks';
 
@@ -19,7 +20,7 @@ describe('[components] - CartProducts', () => {
   });
 
   test('should render call to action text when cart is empty', () => {
-    const { getByText } = setup({ products: [] });
-    expect(getByText(/Add some products in the cart/i)).toBeTruthy();
+    setup({ products: [] });
+    expect(screen.getByText(/Add some products in the cart/i)).toBeTruthy();
   });
 });

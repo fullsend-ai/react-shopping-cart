@@ -1,3 +1,4 @@
+import { screen } from '@testing-library/react';
 import { renderWithThemeProvider } from 'utils/test/test-utils';
 import { ProductsProvider } from 'contexts/products-context/';
 
@@ -19,7 +20,7 @@ describe('[components] - Filter', () => {
   });
 
   test('should render every filter size avaliable', () => {
-    const { getByText } = setup();
-    expect(availableSizes.every((size) => getByText(size))).toBe(true);
+    setup();
+    expect(availableSizes.every((size) => screen.getByText(size))).toBe(true);
   });
 });

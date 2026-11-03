@@ -7,7 +7,7 @@ describe('[contexts] - products-context', () => {
   };
 
   test('should render correctly', () => {
-    const wrapper = setup();
-    expect(wrapper).toMatchSnapshot();
+    const view = setup();
+    expect(view).toMatchSnapshot();
   });
 });

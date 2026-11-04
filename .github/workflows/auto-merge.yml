@@ -1,19 +1,22 @@
 # Demo: merge agent-authored PRs when the fullsend review agent approves.
 # On the review agent's approving review, squash-merges the exact commit
 # that was approved, completing issue -> triage -> code -> review -> merge
-# with no human step. Two controls:
-#   1. The gate is the review agent's approving-review event itself —
-#      nothing runs before an approval exists.
-#   2. --match-head-commit binds the merge to the reviewed commit: if the
-#      PR head moved after the approval, the merge fails (fail-closed) and
-#      the next approval retries on the new head. This control does not
-#      depend on branch protection.
+# with no human step. Controls, in order:
+#   1. Gate: the job runs only on the review agent's approving review of
+#      a non-draft coder-bot PR (the `if:` below).
+#   2. Human veto: the merge aborts if any reviewer's latest review on
+#      the PR is CHANGES_REQUESTED — a human "no" outranks the bot's
+#      approval.
+#   3. Commit binding: --match-head-commit merges only the exact commit
+#      the review approved; a later push breaks the match (fail-closed)
+#      and the next approval retries on the new head.
+#   4. Path restrictions: PRs touching .github/, .fullsend/, package
+#      manifests or the Dockerfile are never auto-merged — a human must
+#      merge those.
 # Branch protection is unavailable on this repository (private repo on a
-# Free plan); the commit binding is the compensating control, recorded in
-# issue #11.
-#
-# Authorized by issue #11. Accepted risk (demo repository): the human
-# merge gate is intentionally removed for agent-authored PRs.
+# Free plan); controls 2-4 are deterministic and do not depend on it.
+# Authorized by issue #11, whose Mitigations section is the accepted-risk
+# record matching this design.
 name: merge agent PRs on clean review
 
 on:
@@ -22,12 +25,15 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: merge-agent-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   merge-on-clean-review:
     # Runs only when the fullsend review agent just approved a PR authored
     # by the fullsend coder bot. Every fresh approval retries the merge,
-    # which also covers the review -> fix -> re-review loop. Draft PRs are
-    # excluded.
+    # which also covers the review -> fix -> re-review loop.
     if: >-
       github.event.review.user.login == 'fullsend-ai-review[bot]'
       && github.event.review.state == 'approved'
@@ -36,11 +42,32 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
+      pull-requests: read
     steps:
       - name: Merge the approved commit
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           REVIEW_SHA: ${{ github.event.review.commit_id }}
-        run: gh pr merge --squash --match-head-commit "$REVIEW_SHA" "$PR_URL"
+        run: |
+          set -euo pipefail
+
+          # Control 2 — human veto: no reviewer's latest review may be
+          # CHANGES_REQUESTED.
+          if gh pr view "$PR_URL" --json latestReviews \
+              --jq '.latestReviews[] | select(.state == "CHANGES_REQUESTED") | .author.login' \
+              | grep -q .; then
+            echo "::error::A reviewer's latest review is CHANGES_REQUESTED; a human veto outranks the bot approval. Not merging."
+            exit 1
+          fi
+
+          # Control 4 — path restrictions: governance paths, dependency
+          # manifests and the image build always require a human merge.
+          if gh pr view "$PR_URL" --json files --jq '.files[].path' \
+              | grep -qE '^\.github/|^\.fullsend/|^package(-lock)?\.json$|^Dockerfile$'; then
+            echo "::error::PR touches protected paths (.github/, .fullsend/, package manifests, Dockerfile); a human must merge it. Not merging."
+            exit 1
+          fi
+
+          # Control 3 — merge only the exact approved commit.
+          gh pr merge --squash --match-head-commit "$REVIEW_SHA" "$PR_URL"

@@ -13,21 +13,26 @@
 #      not trusted as a human override (fail-closed).
 #   3. Commit binding: --match-head-commit merges only the exact commit
 #      the review approved.
-#   4. Path allowlist + agent-instruction denylist: every changed path
-#      (old and new names, full list verified against the event's file
-#      count so the 3000-file API cap cannot truncate it) must be under
-#      src/ or public/, and no path may be an agent instruction/config
-#      file (CLAUDE.md, AGENTS.md, .claude/, ...) at any depth — those
-#      persistently steer later agent runs. Everything else requires a
-#      human merge.
+#   4. Path allowlist + structural denylist: every changed path (old and
+#      new names, count read from the API and validated before use, so
+#      neither the 3000-file cap nor a missing count can truncate the
+#      check) must be under src/ or public/, contain no dot-prefixed
+#      file or directory segment at any depth, and match no agent
+#      instruction name (CLAUDE.md, CLAUDE.local.md, AGENTS.md,
+#      GEMINI.md) — those persistently steer later agent runs.
+#      Everything else requires a human merge.
 # All guards capture their API output first, so an API failure aborts
 # the job (fail-closed) rather than skipping the check.
 #
 # Trust boundary (recorded in issue #11): pull_request_review runs this
 # file from the PR's merge ref, so a PR would supply its own guard if it
-# could edit workflow files — it cannot: the fullsend coder app holds no
-# `workflows` permission, and no pipeline identity can push workflow
-# changes. The agents' app permissions are the real boundary.
+# could edit workflow files — it cannot: none of the five installed
+# fullsend apps holds the `workflows` permission, and only the coder app
+# has contents:write, so it is the token behind every pipeline push
+# (including the fix role's; there is no separate fix app). The agents'
+# app permissions are the real boundary. The production graduation path
+# is a workflow_run relay that runs the merge decision from
+# default-branch code.
 #
 # Branch protection is unavailable on this repository (private repo on a
 # Free plan); the controls are deterministic and do not depend on it.
@@ -65,7 +70,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
           REVIEW_SHA: ${{ github.event.review.commit_id }}
         run: |
           set -euo pipefail
@@ -91,9 +95,10 @@ jobs:
             exit 1
           fi
 
-          # Control 4 — path allowlist + agent-instruction denylist. Old
-          # and new names; the count is verified against the event payload
-          # so the 3000-file API cap cannot silently truncate the list.
+          # Control 4 — path allowlist + structural denylist. Old and new
+          # names; the expected count is read from the API and validated
+          # (all digits) before use, so a missing value refuses the merge
+          # instead of silently skipping the check.
           fnames=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename')
           pnames=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[] | .previous_filename // empty')
           if [ -z "$fnames" ]; then
@@ -101,8 +106,15 @@ jobs:
             exit 1
           fi
           count=$(grep -c . <<<"$fnames")
-          if [ "$count" -ge 3000 ] || [ "$count" -ne "$CHANGED_FILES" ]; then
-            echo "::error::File list incomplete (read ${count}, PR reports ${CHANGED_FILES}); refusing to merge."
+          expected=$(gh pr view "$PR_URL" --json changedFiles --jq .changedFiles)
+          case "$expected" in
+            ''|*[!0-9]*)
+              echo "::error::Could not read the PR's changed-file count; refusing to merge."
+              exit 1
+              ;;
+          esac
+          if [ "$count" -ge 3000 ] || [ "$count" -ne "$expected" ]; then
+            echo "::error::File list incomplete (read ${count}, PR reports ${expected}); refusing to merge."
             exit 1
           fi
           for list in "$fnames" "$pnames"; do
@@ -113,8 +125,12 @@ jobs:
               echo "::error::PR changes paths outside src/ and public/; a human must merge it. Not merging."
               exit 1
             fi
-            if grep -qiE '(^|/)(CLAUDE|AGENTS|GEMINI)\.md$|(^|/)\.(claude|cursor|github|fullsend)(/|$)|(^|/)\.cursorrules$' <<<"$list"; then
-              echo "::error::PR adds or renames agent instruction/config files; a human must merge it. Not merging."
+            if grep -qE '(^|/)\.' <<<"$list"; then
+              echo "::error::PR adds or renames dot-prefixed files or directories; a human must merge it. Not merging."
+              exit 1
+            fi
+            if grep -qiE '(^|/)(CLAUDE|AGENTS|GEMINI)(\.local)?\.md$' <<<"$list"; then
+              echo "::error::PR adds or renames agent instruction files; a human must merge it. Not merging."
               exit 1
             fi
           done

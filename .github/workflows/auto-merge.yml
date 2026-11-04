@@ -1,10 +1,16 @@
 # Demo: merge agent-authored PRs when the fullsend review agent approves.
-# Arms GitHub auto-merge (squash) at the moment of a clean review, so the
-# pipeline runs issue -> triage -> code -> review -> merge with no human
-# step. Arming on the approval event itself is the gate: nothing is ever
-# armed — and no merge can happen — before a review-agent approval exists,
-# whatever branch protection says. (GitHub requires auto-merge to be
-# enabled per PR; the agent does not do it itself.)
+# On the review agent's approving review, squash-merges the exact commit
+# that was approved, completing issue -> triage -> code -> review -> merge
+# with no human step. Two controls:
+#   1. The gate is the review agent's approving-review event itself —
+#      nothing runs before an approval exists.
+#   2. --match-head-commit binds the merge to the reviewed commit: if the
+#      PR head moved after the approval, the merge fails (fail-closed) and
+#      the next approval retries on the new head. This control does not
+#      depend on branch protection.
+# Branch protection is unavailable on this repository (private repo on a
+# Free plan); the commit binding is the compensating control, recorded in
+# issue #11.
 #
 # Authorized by issue #11. Accepted risk (demo repository): the human
 # merge gate is intentionally removed for agent-authored PRs.
@@ -18,13 +24,10 @@ permissions: {}
 
 jobs:
   merge-on-clean-review:
-    # Arm only when the fullsend review agent just approved a PR authored
-    # by the fullsend coder bot. Every fresh approval re-attempts arming,
+    # Runs only when the fullsend review agent just approved a PR authored
+    # by the fullsend coder bot. Every fresh approval retries the merge,
     # which also covers the review -> fix -> re-review loop. Draft PRs are
-    # excluded (GitHub rejects auto-merge on drafts); a draft marked ready
-    # re-arms on its next approved review. dismiss_stale_reviews on main
-    # means a post-approval push dismisses the approval and auto-merge
-    # waits for the next one.
+    # excluded.
     if: >-
       github.event.review.user.login == 'fullsend-ai-review[bot]'
       && github.event.review.state == 'approved'
@@ -35,8 +38,9 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - name: Arm auto-merge after clean review
+      - name: Merge the approved commit
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash "$PR_URL"
+          REVIEW_SHA: ${{ github.event.review.commit_id }}
+        run: gh pr merge --squash --match-head-commit "$REVIEW_SHA" "$PR_URL"

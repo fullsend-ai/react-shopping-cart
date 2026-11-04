@@ -1,42 +1,42 @@
-# Demo: enable GitHub auto-merge on PRs opened by the fullsend coder bot.
-# With branch protection on main requiring one approval, the review agent's
-# approving review satisfies the requirement and GitHub merges the PR
-# automatically — completing issue -> triage -> code -> review -> merge
-# with no human step. (GitHub requires auto-merge to be enabled per PR,
-# and the agent does not click it itself.)
+# Demo: merge agent-authored PRs when the fullsend review agent approves.
+# Arms GitHub auto-merge (squash) at the moment of a clean review, so the
+# pipeline runs issue -> triage -> code -> review -> merge with no human
+# step. Arming on the approval event itself is the gate: nothing is ever
+# armed — and no merge can happen — before a review-agent approval exists,
+# whatever branch protection says. (GitHub requires auto-merge to be
+# enabled per PR; the agent does not do it itself.)
 #
-# Authorized by issue #11. Accepted risk (demo repository): the human merge
-# gate is intentionally removed for agent-authored PRs.
-name: enable auto-merge for agent PRs
+# Authorized by issue #11. Accepted risk (demo repository): the human
+# merge gate is intentionally removed for agent-authored PRs.
+name: merge agent PRs on clean review
 
 on:
-  pull_request_target:
-    types: [opened, ready_for_review, reopened]
+  pull_request_review:
+    types: [submitted]
 
 permissions: {}
 
 jobs:
-  enable-auto-merge:
-    # Retry-friendly: ready_for_review covers drafts marked ready, reopened
-    # covers close/reopen cycles. Draft PRs are skipped (GitHub rejects
-    # auto-merge on drafts); the ready_for_review trigger picks them up later.
+  merge-on-clean-review:
+    # Arm only when the fullsend review agent just approved a PR authored
+    # by the fullsend coder bot. Every fresh approval re-attempts arming,
+    # which also covers the review -> fix -> re-review loop. Draft PRs are
+    # excluded (GitHub rejects auto-merge on drafts); a draft marked ready
+    # re-arms on its next approved review. dismiss_stale_reviews on main
+    # means a post-approval push dismisses the approval and auto-merge
+    # waits for the next one.
     if: >-
-      github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
+      github.event.review.user.login == 'fullsend-ai-review[bot]'
+      && github.event.review.state == 'approved'
+      && github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
       && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
     steps:
-      - name: Verify the review gate is active, then arm auto-merge
+      - name: Arm auto-merge after clean review
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          set -euo pipefail
-          state=$(gh pr view "$PR_URL" --json mergeStateStatus --jq .mergeStateStatus)
-          if [ "$state" != "BLOCKED" ]; then
-            echo "::error::Refusing to enable auto-merge: mergeStateStatus is ${state}, expected BLOCKED (branch protection must gate the merge)."
-            exit 1
-          fi
-          gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL"

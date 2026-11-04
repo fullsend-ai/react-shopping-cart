@@ -14,7 +14,8 @@ roles:
     - prioritize
 agents:
     # Demo: repo-local triage overlay that auto-promotes every sufficient
-    # issue (all categories) to ready-to-code. See .fullsend/triage.yaml.
+    # issue (all categories except security) to ready-to-code.
+    # See .fullsend/triage.yaml.
     - name: triage
       source: triage.yaml
 allowed_remote_resources:

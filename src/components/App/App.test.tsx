@@ -22,6 +22,16 @@ describe('[components] - App', () => {
     expect(view).toMatchSnapshot();
   });
 
+  test('should render the Red Hat logo above the products', () => {
+    setup();
+    const logo = screen.getByRole('img', { name: /red hat/i });
+    const productsCount = screen.getByText(/Product\(s\) found/i);
+    expect(
+      logo.compareDocumentPosition(productsCount) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   test('should not render the recruiter banner', () => {
     setup();
     expect(

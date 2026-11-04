@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import Loader from 'components/Loader';
+import Header from 'components/Header';
 import { GithubCorner, GithubStarButton } from 'components/Github';
 import Filter from 'components/Filter';
 import Products from 'components/Products';
@@ -21,6 +22,7 @@ function App() {
     <S.Container>
       {isFetching && <Loader />}
       <GithubCorner />
+      <Header />
       <S.TwoColumnGrid>
         <S.Side>
           <Filter />

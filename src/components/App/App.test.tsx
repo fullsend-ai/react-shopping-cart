@@ -22,6 +22,24 @@ describe('[components] - App', () => {
     expect(view).toMatchSnapshot();
   });
 
+  test('should render the Red Hat logo above the filters and products', () => {
+    setup();
+    const logo = screen.getByRole('img', { name: /red hat/i });
+    const filterTitle = screen.getByText(/Sizes:/i);
+    const productsCount = screen.getByText(/Product\(s\) found/i);
+    screen.getAllByRole('main').forEach((main) => {
+      expect(main).not.toContainElement(logo);
+    });
+    expect(
+      logo.compareDocumentPosition(filterTitle) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      logo.compareDocumentPosition(productsCount) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   test('should not render the recruiter banner', () => {
     setup();
     expect(

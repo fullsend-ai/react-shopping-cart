@@ -43,6 +43,15 @@ Object {
             />
           </svg>
         </a>
+        <header
+          class="Header__Container-sc-f385dp-0 bEGXsZ"
+        >
+          <img
+            alt="Red Hat"
+            class="Header__Logo-sc-f385dp-1 fRwFQE"
+            src="red-hat-logo.svg"
+          />
+        </header>
         <main
           class="App__TwoColumnGrid-sc-ebmerl-1 buOrsR"
         >
@@ -267,6 +276,15 @@ Object {
           />
         </svg>
       </a>
+      <header
+        class="Header__Container-sc-f385dp-0 bEGXsZ"
+      >
+        <img
+          alt="Red Hat"
+          class="Header__Logo-sc-f385dp-1 fRwFQE"
+          src="red-hat-logo.svg"
+        />
+      </header>
       <main
         class="App__TwoColumnGrid-sc-ebmerl-1 buOrsR"
       >

@@ -1,0 +1,139 @@
+# Demo: merge agent-authored PRs when the fullsend review agent approves.
+# On the review agent's approving review, squash-merges the exact commit
+# that was approved, completing issue -> triage -> code -> review -> merge
+# with no human step. Controls, in order:
+#   0. Head tie: every check runs only when the PR head is still the
+#      reviewed commit; otherwise fail (the next approval retries).
+#   1. Gate: the job runs only on the review agent's approving review of
+#      a non-draft coder-bot PR (the `if:` below).
+#   2. Human veto: the merge aborts if any reviewer's latest opinionated
+#      review (COMMENTED/PENDING excluded) is CHANGES_REQUESTED — or
+#      DISMISSED, which also vetoes: without branch protection, any
+#      pull-requests:write token can dismiss a review, so a dismissal is
+#      not trusted as a human override (fail-closed).
+#   3. Commit binding: --match-head-commit merges only the exact commit
+#      the review approved.
+#   4. Path allowlist + structural denylist: every changed path (old and
+#      new names, count read from the API and validated before use, so
+#      neither the 3000-file cap nor a missing count can truncate the
+#      check) must be under src/ or public/, contain no dot-prefixed
+#      file or directory segment at any depth, and match no agent
+#      instruction name (CLAUDE.md, CLAUDE.local.md, AGENTS.md,
+#      GEMINI.md) — those persistently steer later agent runs.
+#      Everything else requires a human merge.
+# All guards capture their API output first, so an API failure aborts
+# the job (fail-closed) rather than skipping the check.
+#
+# Trust boundary (recorded in issue #11): pull_request_review runs this
+# file from the PR's merge ref, so a PR would supply its own guard if it
+# could edit workflow files — it cannot: none of the five installed
+# fullsend apps holds the `workflows` permission, and only the coder app
+# has contents:write, so it is the token behind every pipeline push
+# (including the fix role's; there is no separate fix app). The agents'
+# app permissions are the real boundary. The production graduation path
+# is a workflow_run relay that runs the merge decision from
+# default-branch code.
+#
+# Branch protection is unavailable on this repository (private repo on a
+# Free plan); the controls are deterministic and do not depend on it.
+# Authorized by issue #11 — see its "Controls in the shipped design" and
+# "Accepted risk" sections for the matching record.
+name: merge agent PRs on clean review
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions: {}
+
+concurrency:
+  group: merge-agent-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  merge-on-clean-review:
+    # Runs only when the fullsend review agent just approved a PR authored
+    # by the fullsend coder bot. Every fresh approval retries the merge,
+    # which also covers the review -> fix -> re-review loop.
+    if: >-
+      github.event.review.user.login == 'fullsend-ai-review[bot]'
+      && github.event.review.state == 'approved'
+      && github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
+      && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Merge the approved commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEW_SHA: ${{ github.event.review.commit_id }}
+        run: |
+          set -euo pipefail
+
+          # Control 0 — head tie: read files and reviews only for the
+          # reviewed commit. If the head moved, fail; the next approval
+          # retries on the new head.
+          head_oid=$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)
+          if [ "$head_oid" != "$REVIEW_SHA" ]; then
+            echo "::error::PR head ($head_oid) is not the reviewed commit ($REVIEW_SHA); not merging."
+            exit 1
+          fi
+
+          # Control 2 — human veto. Latest opinionated review per author
+          # (COMMENTED/PENDING excluded); CHANGES_REQUESTED and DISMISSED
+          # both veto. Captured first: an API failure aborts the job.
+          vetoes=$(gh pr view "$PR_URL" --json reviews --jq '
+            [.reviews[] | select(.state != "COMMENTED" and .state != "PENDING")]
+            | group_by(.author.login) | map(last)
+            | .[] | select(.state == "CHANGES_REQUESTED" or .state == "DISMISSED") | .author.login')
+          if [ -n "$vetoes" ]; then
+            echo "::error::A reviewer's latest review is CHANGES_REQUESTED or DISMISSED; a human veto outranks the bot approval. Not merging."
+            exit 1
+          fi
+
+          # Control 4 — path allowlist + structural denylist. Old and new
+          # names; the expected count is read from the API and validated
+          # (all digits) before use, so a missing value refuses the merge
+          # instead of silently skipping the check.
+          fnames=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename')
+          pnames=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[] | .previous_filename // empty')
+          if [ -z "$fnames" ]; then
+            echo "::error::Could not read the PR's changed files; refusing to merge."
+            exit 1
+          fi
+          count=$(grep -c . <<<"$fnames")
+          expected=$(gh pr view "$PR_URL" --json changedFiles --jq .changedFiles)
+          case "$expected" in
+            ''|*[!0-9]*)
+              echo "::error::Could not read the PR's changed-file count; refusing to merge."
+              exit 1
+              ;;
+          esac
+          if [ "$count" -ge 3000 ] || [ "$count" -ne "$expected" ]; then
+            echo "::error::File list incomplete (read ${count}, PR reports ${expected}); refusing to merge."
+            exit 1
+          fi
+          for list in "$fnames" "$pnames"; do
+            if [ -z "$list" ]; then
+              continue
+            fi
+            if grep -qvE '^src/|^public/' <<<"$list"; then
+              echo "::error::PR changes paths outside src/ and public/; a human must merge it. Not merging."
+              exit 1
+            fi
+            if grep -qE '(^|/)\.' <<<"$list"; then
+              echo "::error::PR adds or renames dot-prefixed files or directories; a human must merge it. Not merging."
+              exit 1
+            fi
+            if grep -qiE '(^|/)(CLAUDE|AGENTS|GEMINI)(\.local)?\.md$' <<<"$list"; then
+              echo "::error::PR adds or renames agent instruction files; a human must merge it. Not merging."
+              exit 1
+            fi
+          done
+
+          # Control 3 — merge only the exact approved commit.
+          gh pr merge --squash --match-head-commit "$REVIEW_SHA" "$PR_URL"

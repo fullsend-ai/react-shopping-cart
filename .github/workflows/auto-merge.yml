@@ -61,9 +61,15 @@ jobs:
       && github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
       && !github.event.pull_request.draft
     runs-on: ubuntu-latest
+    # A job-level permissions block sets every unlisted scope to none. The
+    # squash-merge runs as github-actions[bot], and GitHub performs
+    # closing-keyword auto-close of linked issues as the merging actor —
+    # without issues scope on the token the close is silently skipped,
+    # with no error and no timeline event (issue #17).
     permissions:
       contents: write
       pull-requests: read
+      issues: write
     steps:
       - name: Merge the approved commit
         env:

@@ -8,7 +8,7 @@
         "description": "14/15 s/nº",
         "id": 0,
         "installments": 9,
-        "isFreeShipping": true,
+        "isFreeShipping": false,
         "price": 10.9,
         "sku": 8552515751438644,
         "style": "White T-shirt",

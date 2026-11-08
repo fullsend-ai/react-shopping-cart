@@ -79,6 +79,19 @@ describe('[contexts] - products-context', () => {
             style: 'Tule',
             title: 'Black Tule Oversized',
           },
+          {
+            availableSizes: ['XS', 'S', 'M', 'ML', 'L', 'XL', 'XXL'],
+            currencyFormat: '$',
+            currencyId: 'USD',
+            description: '100% combed ring-spun cotton, 145gsm',
+            id: 16,
+            installments: 9,
+            isFreeShipping: true,
+            price: 13,
+            sku: 1771149885871948,
+            style: 'Red Hat AI logo',
+            title: 'Red Hat AI Black T-Shirt',
+          },
         ]);
       });
     });

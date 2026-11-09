@@ -22,7 +22,8 @@
     "lint": "eslint ./src",
     "format": "prettier --write \"**/*.+(ts|tsx|js|json|css)\"",
     "audit": "npm audit --omit=dev --audit-level=high",
-    "audit:full": "npm audit --audit-level=high"
+    "audit:full": "npm audit --audit-level=high",
+    "prepare": "husky"
   },
   "jest": {
     "collectCoverageFrom": [
@@ -37,12 +38,6 @@
         "lines": 90,
         "statements": 90
       }
-    }
-  },
-  "husky": {
-    "hooks": {
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
-      "pre-commit": "lint-staged"
     }
   },
   "lint-staged": {
@@ -80,7 +75,7 @@
     "@types/react-dom": "^17.0.14",
     "@types/styled-components": "^5.1.23",
     "firebase-tools": "^15.35.0",
-    "husky": "^4.2.5",
+    "husky": "^9.1.7",
     "lint-staged": "^10.2.10",
     "prettier": "^2.5.1",
     "react-scripts": "^5.0.0"

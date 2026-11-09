@@ -1,3 +1,18 @@
 node_modules
 build
 .git
+.github
+# Mirror .gitignore: a local .env must never be baked into an image layer by
+# the Dockerfile's `COPY . .`.
+.env
+.env.*
+!.env.example
+.fullsend
+.firebase
+.firebaserc
+firebase.json
+coverage
+Dockerfile
+*.md
+readme-banner.png
+work-in-the-netherlands.png

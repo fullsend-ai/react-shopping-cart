@@ -1,0 +1,70 @@
+name: security
+
+# Two checks the repository cannot get from GitHub itself on this plan:
+# secret scanning (GHAS-only for private repos) and a production-dependency
+# gate (Dependabot alerts notify, they do not block).
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so a newly published advisory fails the next run even with no
+    # commits and no Dependabot PR yet.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  # Keyed by event and ref, and by commit SHA for pushes, so that (a) a push
+  # cannot cancel an in-progress weekly full-history scan, (b) two pushes to main
+  # do not cancel each other — GitHub keeps only one pending run per group, so a
+  # burst of pushes would otherwise drop the middle one's scan — and (c)
+  # pull-request runs, which all rewrite the same ref, are still superseded.
+  group: security-${{ github.event_name }}-${{ github.ref }}${{ github.event_name == 'push' && format('-{0}', github.sha) || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history so the weekly scheduled run can scan every commit.
+          # Push and pull_request runs scan only their own range, and for pull
+          # requests gitleaks-action builds that range from the commits GitHub
+          # returns for the PR — the first 30, with merges skipped — so a longer
+          # PR is fully covered only by the weekly full-history run.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-audit:
+    name: Production dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Audits the lockfile only — nothing is installed, so no package in the
+      # tree gets to run its install scripts inside CI.
+      #
+      # The blocking gate is production-only: that is the tree bundled into the
+      # deployed site, which is what Firebase serves. It deliberately does NOT
+      # cover the container image, which runs `npm ci` + `react-scripts start`
+      # and so executes the dev tree, webpack-dev-server included. The full-tree
+      # step below reports that surface without blocking, because react-scripts
+      # has no release free of advisories and a gate that can never go green
+      # stops being read.
+      - name: Audit production dependency tree
+        run: npm audit --package-lock-only --omit=dev --audit-level=high
+      - name: Audit full tree (container runtime, non-blocking)
+        continue-on-error: true
+        run: npm audit --package-lock-only --audit-level=high

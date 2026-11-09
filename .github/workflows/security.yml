@@ -1,0 +1,54 @@
+name: security
+
+# Two checks the repository cannot get from GitHub itself on this plan:
+# secret scanning (GHAS-only for private repos) and a production-dependency
+# gate (Dependabot alerts notify, they do not block).
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so a newly published advisory fails the next run even with no
+    # commits and no Dependabot PR yet.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # Full history so the weekly scheduled run can scan every commit. The
+          # push and pull_request runs still scan only their own new commits —
+          # gitleaks-action narrows to a commit range for those events.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-audit:
+    name: Production dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      # Audits the lockfile only — nothing is installed, so no package in the
+      # tree gets to run its install scripts inside CI. Dev dependencies are
+      # excluded: they are build-time only and would keep this gate red on
+      # advisories that never reach the shipped bundle.
+      - name: Audit production dependency tree
+        run: npm audit --package-lock-only --omit=dev --audit-level=high

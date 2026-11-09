@@ -1,3 +1,13 @@
 node_modules
 build
 .git
+.github
+.fullsend
+.firebase
+.firebaserc
+firebase.json
+coverage
+Dockerfile
+*.md
+readme-banner.png
+work-in-the-netherlands.png

@@ -1,0 +1,32 @@
+version: 2
+
+updates:
+  # npm: security fixes grouped into one reviewable PR; routine dev-dependency
+  # bumps grouped and capped so alert noise stays reviewable.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns: ["*"]
+      dev-minor-patch:
+        applies-to: version-updates
+        dependency-type: development
+        update-types: ["minor", "patch"]
+    ignore:
+      # react-scripts 5.x is the end of the line; CRA is deprecated, so a
+      # major bump has no target version and would only produce failures.
+      - dependency-name: react-scripts
+        update-types: ["version-update:semver-major"]
+
+  # Keep the SHA-pinned action refs in .github/workflows fresh.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5

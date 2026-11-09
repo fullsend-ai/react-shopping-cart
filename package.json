@@ -70,7 +70,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^16.2.1",
-    "@commitlint/config-conventional": "^16.2.1",
+    "@commitlint/config-conventional": "^21.2.4",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.0.0",
     "@testing-library/react-hooks": "^7.0.2",

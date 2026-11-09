@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-hooks';
+import { renderHook } from '@testing-library/react';
 import { ICartTotal } from 'models';
 import React, { ReactNode } from 'react';
 import { CartProvider } from '..';

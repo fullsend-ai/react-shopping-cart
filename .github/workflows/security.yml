@@ -17,8 +17,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: security-${{ github.ref }}
-  cancel-in-progress: true
+  # Keyed by event as well as ref, so a push cannot cancel an in-progress weekly
+  # full-history scan, and two pushes to main do not cancel each other's scan of
+  # commits the other one did not see. Pull-request runs are still superseded.
+  group: security-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   secret-scan:
@@ -47,8 +50,17 @@ jobs:
         with:
           persist-credentials: false
       # Audits the lockfile only — nothing is installed, so no package in the
-      # tree gets to run its install scripts inside CI. Dev dependencies are
-      # excluded: they are build-time only and would keep this gate red on
-      # advisories that never reach the shipped bundle.
+      # tree gets to run its install scripts inside CI.
+      #
+      # The blocking gate is production-only: that is the tree bundled into the
+      # deployed site, which is what Firebase serves. It deliberately does NOT
+      # cover the container image, which runs `npm ci` + `react-scripts start`
+      # and so executes the dev tree, webpack-dev-server included. The full-tree
+      # step below reports that surface without blocking, because react-scripts
+      # has no release free of advisories and a gate that can never go green
+      # stops being read.
       - name: Audit production dependency tree
         run: npm audit --package-lock-only --omit=dev --audit-level=high
+      - name: Audit full tree (container runtime, non-blocking)
+        continue-on-error: true
+        run: npm audit --package-lock-only --audit-level=high

@@ -25,7 +25,8 @@ to a user's device.
 ## Already in place
 
 - Dependabot watches dependencies; `security.yml` fails when a high-severity
-  advisory reaches a production dependency
+  advisory reaches a production dependency of the deployed bundle, and reports
+  the full tree — the one the container image actually runs — without blocking
 - commits are scanned for secrets (gitleaks): each push and pull request scans
   its new commits, and a weekly run scans the full history
 - the deployed site sends CSP, HSTS, `nosniff`, `X-Frame-Options`,

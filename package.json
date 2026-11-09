@@ -22,7 +22,8 @@
     "lint": "eslint ./src",
     "format": "prettier --write \"**/*.+(ts|tsx|js|json|css)\"",
     "audit": "npm audit --omit=dev --audit-level=high",
-    "audit:full": "npm audit --audit-level=high"
+    "audit:full": "npm audit --audit-level=high",
+    "prepare": "husky"
   },
   "jest": {
     "collectCoverageFrom": [
@@ -37,12 +38,6 @@
         "lines": 90,
         "statements": 90
       }
-    }
-  },
-  "husky": {
-    "hooks": {
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
-      "pre-commit": "lint-staged"
     }
   },
   "lint-staged": {

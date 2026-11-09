@@ -81,7 +81,7 @@
     "@types/react-dom": "^17.0.14",
     "@types/styled-components": "^5.1.23",
     "firebase-tools": "^15.35.0",
-    "husky": "^4.2.5",
+    "husky": "^9.1.7",
     "lint-staged": "^10.2.10",
     "prettier": "^2.5.1",
     "react-scripts": "^5.0.0"

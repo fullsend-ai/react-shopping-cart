@@ -17,10 +17,12 @@ permissions:
   contents: read
 
 concurrency:
-  # Keyed by event as well as ref, so a push cannot cancel an in-progress weekly
-  # full-history scan, and two pushes to main do not cancel each other's scan of
-  # commits the other one did not see. Pull-request runs are still superseded.
-  group: security-${{ github.event_name }}-${{ github.ref }}
+  # Keyed by event and ref, and by commit SHA for pushes, so that (a) a push
+  # cannot cancel an in-progress weekly full-history scan, (b) two pushes to main
+  # do not cancel each other — GitHub keeps only one pending run per group, so a
+  # burst of pushes would otherwise drop the middle one's scan — and (c)
+  # pull-request runs, which all rewrite the same ref, are still superseded.
+  group: security-${{ github.event_name }}-${{ github.ref }}${{ github.event_name == 'push' && format('-{0}', github.sha) || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -33,9 +35,11 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
-          # Full history so the weekly scheduled run can scan every commit. The
-          # push and pull_request runs still scan only their own new commits —
-          # gitleaks-action narrows to a commit range for those events.
+          # Full history so the weekly scheduled run can scan every commit.
+          # Push and pull_request runs scan only their own range, and for pull
+          # requests gitleaks-action builds that range from the commits GitHub
+          # returns for the PR — the first 30, with merges skipped — so a longer
+          # PR is fully covered only by the weekly full-history run.
           fetch-depth: 0
           persist-credentials: false
       - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9

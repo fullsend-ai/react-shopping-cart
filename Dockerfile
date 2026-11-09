@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 # WORKDIR creates /app owned by root; hand it to `node` before dropping

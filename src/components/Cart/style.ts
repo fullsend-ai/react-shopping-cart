@@ -41,8 +41,7 @@ export const Container = styled.div<IContainer>`
 
   ${CartButton} {
     left: ${({ $isOpen }) => ($isOpen ? '0' : '-50px')};
-    background-color: ${({ theme, $isOpen }) =>
-      $isOpen ? theme.colors.black : theme.colors.primary};
+    background-color: ${({ theme }) => theme.colors.primary};
   }
 
   @media only screen and (min-width: ${({ theme: { breakpoints } }) =>

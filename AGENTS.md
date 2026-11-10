@@ -40,6 +40,9 @@
 - `@types/jest` stays on 27.x to match the `jest@27` runtime shipped by
   `react-scripts@5`. Its `ts4.9` tag is 29.5.14. `@types/jest@30.0.0` fails
   `npm run typecheck` (TS2726 in its bundled `jest-mock` typings).
+  Dependabot ignores `@types/jest >=28` (`.github/dependabot.yml`).
+- `react-scripts` stays on 5.x. CRA is deprecated and has no newer major, so
+  Dependabot ignores `react-scripts` major updates.
 
 ### `npm run typecheck`
 
@@ -55,8 +58,10 @@ styled-components exports. Only the typecheck config loads it. Delete the
 shim when TypeScript is raised to 5.4 or later.
 
 Do not use `NoInfer` in `src`. The shim makes it pass `npm run typecheck`,
-but `build`, `start` and `test` do not load the shim and fail with TS2304.
-The `npm run build` step of the validation commands below catches this.
+but `build` and `start` do not load the shim and fail with TS2304
+(fork-ts-checker type-checks them). `CI=true npm test` does not type-check
+(babel-jest only strips types), so it still passes. The `npm run build` step
+of the validation commands below is the one that catches this.
 
 ### Validating a dependency PR
 
@@ -87,3 +92,6 @@ allowed, relax these together:
 - the shim in `typecheck/ts4.9-shims.d.ts`, but only once the installed
   TypeScript is 5.4 or later. TypeScript 5.0–5.3 has no built-in `NoInfer`,
   so removing the shim earlier brings back the TS2304 errors.
+- the `@types/jest` Dependabot ignore rule, but only when `react-scripts`
+  (and its Jest 27 runtime) is replaced. It tracks the Jest version, not the
+  TypeScript version, so keep it if only TypeScript is raised.

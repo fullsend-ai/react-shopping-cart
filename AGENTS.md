@@ -54,13 +54,22 @@ There is one scoped exception. `styled-components` 6.5 and later (6.6.0 on
 styled-components exports. Only the typecheck config loads it. Delete the
 shim when TypeScript is raised to 5.4 or later.
 
+Do not use `NoInfer` in `src`. The shim makes it pass `npm run typecheck`,
+but `build`, `start` and `test` do not load the shim and fail with TS2304.
+The `npm run build` step of the validation commands below catches this.
+
 ### Validating a dependency PR
 
-Run all four and report each result, including `npm run typecheck`, in the
-PR body:
+Run all four separately and report each result, including
+`npm run typecheck`, in the PR body. Run the last three even if an earlier
+one fails, so one failure does not hide the others (stop only if `npm ci`
+fails):
 
 ```sh
-npm ci && npm run typecheck && npm run build && CI=true npm test
+npm ci
+npm run typecheck
+npm run build
+CI=true npm test
 ```
 
 The repo has no build/test CI (#7, #36). The `security` workflow only runs a
@@ -75,4 +84,6 @@ allowed, relax these together:
 - the `typescript` and `@types/node` Dependabot ignore rules (see the
   comments in `.github/dependabot.yml`)
 - the `@types/node` pin
-- the shim in `typecheck/ts4.9-shims.d.ts`
+- the shim in `typecheck/ts4.9-shims.d.ts`, but only once the installed
+  TypeScript is 5.4 or later. TypeScript 5.0–5.3 has no built-in `NoInfer`,
+  so removing the shim earlier brings back the TS2304 errors.

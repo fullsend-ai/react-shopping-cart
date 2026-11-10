@@ -25,7 +25,7 @@ const Cart = () => {
     isOpen ? closeCart() : openCart();
 
   return (
-    <S.Container isOpen={isOpen}>
+    <S.Container $isOpen={isOpen}>
       <S.CartButton onClick={handleToggleCart(isOpen)}>
         {isOpen ? (
           <span>X</span>
@@ -41,7 +41,7 @@ const Cart = () => {
       {isOpen && (
         <S.CartContent>
           <S.CartContentHeader>
-            <S.CartIcon large>
+            <S.CartIcon $large>
               <S.CartQuantity>{total.productQuantity}</S.CartQuantity>
             </S.CartIcon>
             <S.HeaderTitle>Cart</S.HeaderTitle>

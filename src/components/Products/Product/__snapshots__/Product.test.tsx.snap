@@ -6,28 +6,28 @@ Object {
   "baseElement": <body>
     <div>
       <div
-        class="Product__Container-sc-124al1g-2 kgHzaj"
+        class="sc-jSFiLV bpQlSj"
         tabindex="1"
       >
         <div
-          class="Product__Stopper-sc-124al1g-3 iirFfh"
+          class="sc-gKzZKs lhoDZg"
         >
           Free shipping
         </div>
         <div
           alt="Cropped Stay Groovy off white"
-          class="Product__Image-sc-124al1g-1"
+          class="sc-eCAofS"
         />
         <p
-          class="Product__Title-sc-124al1g-4 iKNVRs"
+          class="sc-iCoJwv ibRNQh"
         >
           Cropped Stay Groovy off white
         </p>
         <div
-          class="Product__Price-sc-124al1g-5 iZlLwH"
+          class="sc-fujAuS hxWgeN"
         >
           <p
-            class="Product__Val-sc-124al1g-6 eKyHNu"
+            class="sc-pNXYm OiflX"
           >
             <small>
               $
@@ -40,7 +40,7 @@ Object {
             </span>
           </p>
           <p
-            class="Product__Installment-sc-124al1g-7 hBZpTG"
+            class="sc-jrsLdz kzPvbn"
           >
             <span>
               or 
@@ -54,7 +54,7 @@ Object {
           </p>
         </div>
         <button
-          class="Product__BuyButton-sc-124al1g-0 jCZDKU"
+          class="sc-hKFxhv dXWTBh"
           tabindex="-1"
         >
           Add to cart
@@ -64,28 +64,28 @@ Object {
   </body>,
   "container": <div>
     <div
-      class="Product__Container-sc-124al1g-2 kgHzaj"
+      class="sc-jSFiLV bpQlSj"
       tabindex="1"
     >
       <div
-        class="Product__Stopper-sc-124al1g-3 iirFfh"
+        class="sc-gKzZKs lhoDZg"
       >
         Free shipping
       </div>
       <div
         alt="Cropped Stay Groovy off white"
-        class="Product__Image-sc-124al1g-1"
+        class="sc-eCAofS"
       />
       <p
-        class="Product__Title-sc-124al1g-4 iKNVRs"
+        class="sc-iCoJwv ibRNQh"
       >
         Cropped Stay Groovy off white
       </p>
       <div
-        class="Product__Price-sc-124al1g-5 iZlLwH"
+        class="sc-fujAuS hxWgeN"
       >
         <p
-          class="Product__Val-sc-124al1g-6 eKyHNu"
+          class="sc-pNXYm OiflX"
         >
           <small>
             $
@@ -98,7 +98,7 @@ Object {
           </span>
         </p>
         <p
-          class="Product__Installment-sc-124al1g-7 hBZpTG"
+          class="sc-jrsLdz kzPvbn"
         >
           <span>
             or 
@@ -112,7 +112,7 @@ Object {
         </p>
       </div>
       <button
-        class="Product__BuyButton-sc-124al1g-0 jCZDKU"
+        class="sc-hKFxhv dXWTBh"
         tabindex="-1"
       >
         Add to cart

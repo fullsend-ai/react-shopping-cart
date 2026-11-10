@@ -6,11 +6,11 @@ Object {
   "baseElement": <body>
     <div>
       <header
-        class="Header__Container-sc-f385dp-0 bEGXsZ"
+        class="sc-bdnzMm kcveJM"
       >
         <img
           alt="Red Hat"
-          class="Header__Logo-sc-f385dp-1 fRwFQE"
+          class="sc-gtsusp eHYkeM"
           src="red-hat-logo.svg"
         />
       </header>
@@ -18,11 +18,11 @@ Object {
   </body>,
   "container": <div>
     <header
-      class="Header__Container-sc-f385dp-0 bEGXsZ"
+      class="sc-bdnzMm kcveJM"
     >
       <img
         alt="Red Hat"
-        class="Header__Logo-sc-f385dp-1 fRwFQE"
+        class="sc-gtsusp eHYkeM"
         src="red-hat-logo.svg"
       />
     </header>

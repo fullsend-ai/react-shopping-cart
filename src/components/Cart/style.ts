@@ -1,4 +1,4 @@
-import styled from 'styled-components/macro';
+import styled from 'styled-components';
 
 export const CartButton = styled.button`
   border: 0;
@@ -25,12 +25,12 @@ export const CartButton = styled.button`
 `;
 
 interface IContainer {
-  isOpen: boolean;
+  $isOpen: boolean;
 }
 export const Container = styled.div<IContainer>`
   position: fixed;
   top: 0;
-  right: ${({ isOpen }) => (isOpen ? '0' : '-100%')};
+  right: ${({ $isOpen }) => ($isOpen ? '0' : '-100%')};
   width: 100%;
   height: 100%;
   background-color: ${({ theme }) => theme.colors.primary};
@@ -40,15 +40,14 @@ export const Container = styled.div<IContainer>`
   transition: right 0.2s;
 
   ${CartButton} {
-    left: ${({ isOpen }) => (isOpen ? '0' : '-50px')};
-    background-color: ${({ theme, isOpen }) =>
-      isOpen ? theme.colors.black : theme.colors.primary};
+    left: ${({ $isOpen }) => ($isOpen ? '0' : '-50px')};
+    background-color: ${({ theme }) => theme.colors.primary};
   }
 
   @media only screen and (min-width: ${({ theme: { breakpoints } }) =>
       breakpoints.tablet}) {
     width: 450px;
-    right: ${({ isOpen }) => (isOpen ? '0' : '-450px')};
+    right: ${({ $isOpen }) => ($isOpen ? '0' : '-450px')};
 
     ${CartButton} {
       left: -50px;
@@ -57,11 +56,11 @@ export const Container = styled.div<IContainer>`
 `;
 
 interface ICartIcon {
-  large?: boolean;
+  $large?: boolean;
 }
 export const CartIcon = styled.div<ICartIcon>`
-  width: ${({ large }) => (large ? '60px' : '50px')};
-  height: ${({ large }) => (large ? '60px' : '50px')};
+  width: ${({ $large }) => ($large ? '60px' : '50px')};
+  height: ${({ $large }) => ($large ? '60px' : '50px')};
   position: relative;
   display: inline-block;
   vertical-align: middle;

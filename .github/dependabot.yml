@@ -27,6 +27,11 @@ updates:
       # major bump has no target version and would only produce failures.
       - dependency-name: react-scripts
         update-types: ["version-update:semver-major"]
+      # react-scripts 5.0.1 caps its typescript peer at "^3.2.1 || ^4", and its
+      # toolchain (fork-ts-checker, @typescript-eslint) needs the JS compiler
+      # API. Stay on TypeScript 4.x; remove this rule when leaving CRA.
+      - dependency-name: typescript
+        versions: [">=5"]
 
   # Keep the SHA-pinned action refs in .github/workflows fresh.
   - package-ecosystem: github-actions

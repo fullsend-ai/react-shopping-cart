@@ -61,7 +61,10 @@ Do not use `NoInfer` in `src`. The shim makes it pass `npm run typecheck`,
 but `build` and `start` do not load the shim and fail with TS2304
 (fork-ts-checker type-checks them). `CI=true npm test` does not type-check
 (babel-jest only strips types), so it still passes. The `npm run build` step
-of the validation commands below is the one that catches this.
+of the validation commands below catches this, but only in application code.
+fork-ts-checker skips test files (`*.test.*`, `*.spec.*`, `__tests__/`,
+`setupTests.*`, `setupProxy.*`), so no validation command catches `NoInfer`
+there. Do not use it in test files either.
 
 ### Validating a dependency PR
 

@@ -32,13 +32,15 @@ updates:
       # API. Stay on TypeScript 4.x; remove this rule when leaving CRA.
       - dependency-name: typescript
         versions: [">=5"]
-      # @types/node's major must track the oldest supported Node runtime
-      # (engines.node ">=22.22.1"), not the latest Node release. Raise this
-      # bound together with engines.node. package.json pins 22.9.3 exactly:
-      # it is the "ts4.9" dist-tag, and later 22.x releases declare
-      # typeScriptVersion >=5.0, which TypeScript 4.9 does not support.
+      # package.json pins @types/node to 22.9.3 exactly: it is the "ts4.9"
+      # dist-tag, and every later release (22.x minors/patches included)
+      # declares typeScriptVersion >=5.0, which TypeScript 4.9 does not
+      # support. Ignore everything above the pin while on TypeScript 4.x.
+      # When the typescript rule above is removed, relax this to
+      # [">=23"]: the major must track the oldest supported Node runtime
+      # (engines.node ">=22.22.1"), so raise it together with engines.node.
       - dependency-name: "@types/node"
-        versions: [">=23"]
+        versions: [">22.9.3"]
 
   # Keep the SHA-pinned action refs in .github/workflows fresh.
   - package-ecosystem: github-actions

@@ -20,6 +20,7 @@
     "deploy": "firebase deploy",
     "eject": "react-scripts eject",
     "lint": "eslint ./src",
+    "typecheck": "tsc --project tsconfig.typecheck.json",
     "format": "prettier --write \"**/*.+(ts|tsx|js|json|css)\"",
     "audit": "npm audit --omit=dev --audit-level=high",
     "audit:full": "npm audit --audit-level=high",

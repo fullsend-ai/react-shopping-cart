@@ -8,6 +8,11 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    # fullsend-fix opts these PRs into the fix agent: it only auto-fixes PRs
+    # from its own coder bot unless this label is present
+    # (check-fix-eligibility.sh). `dependencies` is listed explicitly because
+    # `labels` replaces Dependabot's default label rather than adding to it.
+    labels: ["dependencies", "fullsend-fix"]
     groups:
       security-updates:
         applies-to: security-updates

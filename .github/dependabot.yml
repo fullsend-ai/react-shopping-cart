@@ -13,6 +13,12 @@ updates:
       security-updates:
         applies-to: security-updates
         patterns: ["*"]
+      # commitlint packages are released in lockstep; the CLI and the preset
+      # must move together (including majors), or the commit-msg hook breaks.
+      # Listed before dev-minor-patch so it claims these packages first.
+      commitlint:
+        applies-to: version-updates
+        patterns: ["@commitlint/*"]
       dev-minor-patch:
         applies-to: version-updates
         dependency-type: development

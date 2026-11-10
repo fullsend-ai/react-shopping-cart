@@ -34,7 +34,7 @@ Try playing with the code on CodeSandbox :)
 
 #### Requirements
 
-- Node.js >= 22 (24 LTS recommended, see `.nvmrc`)
+- Node.js >= 22.12.0 (24 LTS recommended, see `.nvmrc`)
 - NPM
 
 ```javascript

@@ -46,4 +46,15 @@ describe('[components] - App', () => {
       screen.queryByText(/Work in the Netherlands/i)
     ).not.toBeInTheDocument();
   });
+
+  test('should not render the GitHub star button', () => {
+    setup();
+    expect(
+      screen.queryByText(/Leave a star on Github/i)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /Star .* on GitHub/i })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/Sizes:/i)).toBeInTheDocument();
+  });
 });

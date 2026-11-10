@@ -41,6 +41,12 @@ updates:
       # (engines.node ">=22.22.1"), so raise it together with engines.node.
       - dependency-name: "@types/node"
         versions: [">22.9.3"]
+      # react-scripts 5.x runs Jest 27, so @types/jest must stay on 27.x to
+      # describe the runtime that actually executes the tests; newer majors
+      # type APIs Jest 27 lacks and drop ones it still has (and 30.x needs
+      # TypeScript 5). Remove when leaving CRA.
+      - dependency-name: "@types/jest"
+        versions: [">=28"]
 
   # Keep the SHA-pinned action refs in .github/workflows fresh.
   - package-ecosystem: github-actions

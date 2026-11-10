@@ -1,16 +1,7 @@
-import * as React from 'react';
-import { ThemedStyledComponentsModule } from 'styled-components';
+import 'styled-components';
+
+import { StyleClosetTheme } from './theme';
 
 declare module 'styled-components' {
-  export interface ThemedStyledComponentsModule<T> {
-    createGlobalStyle(
-      strings: TemplateStringsArray,
-      ...interpolations: SimpleInterpolation[]
-    ): React.ComponentClass;
-  }
-
-  export function createGlobalStyle(
-    strings: TemplateStringsArray,
-    ...interpolations: SimpleInterpolation[]
-  ): React.ComponentClass;
+  export interface DefaultTheme extends StyleClosetTheme {}
 }

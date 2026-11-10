@@ -6,4 +6,8 @@
 // so declare the same fallback styled-components exports from
 // `styled-components/dist/utils/noInfer`. Delete this file when TypeScript
 // is raised to >= 5.4, or it will clash with the built-in declaration.
+//
+// Code under `src` must not use `NoInfer`: this shim makes it pass
+// `npm run typecheck`, but react-scripts build/start/test do not load the
+// shim and would fail with TS2304.
 type NoInfer<T> = [T][T extends any ? 0 : never];

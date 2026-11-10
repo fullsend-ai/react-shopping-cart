@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 import Loader from 'components/Loader';
 import Header from 'components/Header';
-import { GithubCorner, GithubStarButton } from 'components/Github';
+import { GithubCorner } from 'components/Github';
 import Filter from 'components/Filter';
 import Products from 'components/Products';
 import Cart from 'components/Cart';
@@ -26,7 +26,6 @@ function App() {
       <S.TwoColumnGrid>
         <S.Side>
           <Filter />
-          <GithubStarButton />
         </S.Side>
         <S.Main>
           <S.MainHeader>

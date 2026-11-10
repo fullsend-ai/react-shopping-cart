@@ -179,25 +179,6 @@ Object {
                 </label>
               </div>
             </div>
-            <div
-              class="star-button-container"
-            >
-              <p>
-                <small>
-                  Leave a star on Github if this repository was useful :)
-                </small>
-              </p>
-              <a
-                aria-label="Star jeffersonRibeiro/react-shopping-cart on GitHub"
-                class="github-button"
-                data-icon="octicon-star"
-                data-size="large"
-                href="https://github.com/jeffersonRibeiro/react-shopping-cart"
-                tabindex="-1"
-              >
-                Star
-              </a>
-            </div>
           </div>
           <main
             class="sc-carIbr"
@@ -410,25 +391,6 @@ Object {
                 </span>
               </label>
             </div>
-          </div>
-          <div
-            class="star-button-container"
-          >
-            <p>
-              <small>
-                Leave a star on Github if this repository was useful :)
-              </small>
-            </p>
-            <a
-              aria-label="Star jeffersonRibeiro/react-shopping-cart on GitHub"
-              class="github-button"
-              data-icon="octicon-star"
-              data-size="large"
-              href="https://github.com/jeffersonRibeiro/react-shopping-cart"
-              tabindex="-1"
-            >
-              Star
-            </a>
           </div>
         </div>
         <main

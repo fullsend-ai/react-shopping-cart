@@ -16,10 +16,10 @@
 #   4. Path allowlist + structural denylist: every changed path (old and
 #      new names, count read from the API and validated before use, so
 #      neither the 3000-file cap nor a missing count can truncate the
-#      check) must be under src/ or public/, contain no dot-prefixed
-#      file or directory segment at any depth, and match no agent
-#      instruction name (CLAUDE.md, CLAUDE.local.md, AGENTS.md,
-#      GEMINI.md) — those persistently steer later agent runs.
+#      check) must be under src/ or public/, or be the root firebase.json;
+#      contain no dot-prefixed file or directory segment at any depth;
+#      and match no agent instruction name (CLAUDE.md, CLAUDE.local.md,
+#      AGENTS.md, GEMINI.md) — those persistently steer later agent runs.
 #      Everything else requires a human merge.
 # All guards capture their API output first, so an API failure aborts
 # the job (fail-closed) rather than skipping the check.
@@ -34,10 +34,9 @@
 # is a workflow_run relay that runs the merge decision from
 # default-branch code.
 #
-# Branch protection is unavailable on this repository (private repo on a
-# Free plan); the controls are deterministic and do not depend on it.
-# Authorized by issue #11 — see its "Controls in the shipped design" and
-# "Accepted risk" sections for the matching record.
+# Branch protection is not configured; the controls do not depend on it.
+# Initial guard authorized by issue #11; the root firebase.json allowance
+# extends it for PR #74.
 name: merge agent PRs on clean review
 
 on:
@@ -127,8 +126,8 @@ jobs:
             if [ -z "$list" ]; then
               continue
             fi
-            if grep -qvE '^src/|^public/' <<<"$list"; then
-              echo "::error::PR changes paths outside src/ and public/; a human must merge it. Not merging."
+            if grep -qvE '^src/|^public/|^firebase\.json$' <<<"$list"; then
+              echo "::error::PR changes paths outside src/, public/, and root firebase.json; a human must merge it. Not merging."
               exit 1
             fi
             if grep -qE '(^|/)\.' <<<"$list"; then

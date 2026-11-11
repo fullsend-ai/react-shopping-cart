@@ -7,7 +7,11 @@
 // `styled-components/dist/utils/noInfer`. Delete this file when TypeScript
 // is raised to >= 5.4, or it will clash with the built-in declaration.
 //
-// Code under `src` must not use `NoInfer`: this shim makes it pass
-// `npm run typecheck`, but react-scripts build/start/test do not load the
-// shim and would fail with TS2304.
+// Code under `src` must not use `NoInfer`, including test files. This shim
+// makes it pass `npm run typecheck`, but `build` and `start` do not load the
+// shim and fail with TS2304 (fork-ts-checker type-checks them).
+// `CI=true npm test` does not type-check (babel-jest only strips types), so
+// it still passes. fork-ts-checker also skips test and setup files
+// (`*.test.*`, `*.spec.*`, `__tests__/`, `setupTests.*`, `setupProxy.*`), so
+// nothing but this rule catches `NoInfer` there.
 type NoInfer<T> = [T][T extends any ? 0 : never];

@@ -1,5 +1,5 @@
 # Demo overlay: widen triage auto-promotion beyond the stock categories.
-# Composes the stock triage harness (pinned to the v0.54.0 agents release)
+# Composes the stock triage harness (pinned to the v0.55.0 agents release)
 # and overrides only TRIAGE_AUTO_CODE_CATEGORIES — with TRIAGE_AUTO_CODE=on
 # (inherited from the base), the post-script promotes every sufficient
 # issue in the categories listed below to ready-to-code, so the pipeline
@@ -11,7 +11,7 @@
 # Excluded by design (authorized by issue #11):
 #   - `security`: security reports are not auto-fixed in public.
 #   - `other`: the catch-all; unclassifiable issues do not auto-promote.
-base: https://raw.githubusercontent.com/fullsend-ai/agents/87a43fcb849546b267a619434ca19dedde8df476/harness/triage.yaml#sha256=ae07e51bb1f634bbb842a498f9ca4cd588982c7811d1ae4c07a06232e50a231b
+base: https://raw.githubusercontent.com/fullsend-ai/agents/3b40ac718d29c3190b71e68447b9f4e938f19974/harness/triage.yaml#sha256=d56f5ed8d45c5a8aee6031f519b3c7b1c048a3dc14e67870fbd0029d63d935b4
 
 env:
   runner:

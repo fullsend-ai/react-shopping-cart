@@ -22,7 +22,7 @@ on:
   schedule:
     # Offset off the :00/:05 boundaries: GitHub deprioritises those under load,
     # and an every-5-minutes schedule is the most contended there is.
-    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
+    - cron: "*/6 * * * *"
   workflow_dispatch: {}
 
 permissions: {}

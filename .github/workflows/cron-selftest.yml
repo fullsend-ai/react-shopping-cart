@@ -1,0 +1,9 @@
+name: cron selftest
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+jobs:
+  tick:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "scheduled trigger fired at $(date -u)"

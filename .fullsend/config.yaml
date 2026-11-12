@@ -22,11 +22,11 @@ allowed_remote_resources:
     - https://raw.githubusercontent.com/fullsend-ai/fullsend/
     - https://raw.githubusercontent.com/fullsend-ai/agents/
 tracker:
-    github:
-        allowed_targets:
-            repos:
-                - fullsend-ai/fullsend
-                - fullsend-ai/agents
+    jira:
+        base_url: https://redhat.atlassian.net
+        project: TSTAPP
+        poll:
+            enabled: true
 inference:
     project: it-gcp-fullsend-demo
     wif_provider: projects/508990529289/locations/global/workloadIdentityPools/fullsend-inference/providers/gh-shairevivo-react-shopping-car

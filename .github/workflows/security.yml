@@ -31,20 +31,34 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Full history so the weekly scheduled run can scan every commit.
-          # Push and pull_request runs scan only their own range, and for pull
-          # requests gitleaks-action builds that range from the commits GitHub
-          # returns for the PR — the first 30, with merges skipped — so a longer
-          # PR is fully covered only by the weekly full-history run.
+          # Full history so every run — PR, push and the weekly schedule —
+          # scans every commit.
           fetch-depth: 0
           persist-credentials: false
-      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+      # gitleaks-action v3 refuses to run in an organization without a
+      # GITLEAKS_LICENSE. The gate lives in the action wrapper; gitleaks itself
+      # is MIT-licensed, so the CLI scans the same rules with no key. Calling it
+      # directly also removes the action's 30-commit cap on pull requests: the
+      # whole history is present and scanned.
+      - name: Scan for secrets (gitleaks)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Bump the version and the digest together. The digest is pinned here
+          # rather than read from the release's checksums asset, which would come
+          # from the same mutable release: replacing both assets would then
+          # satisfy their own verification.
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          asset="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL --retry 3 --retry-all-errors -o "$asset" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${asset}"
+          echo "${GITLEAKS_SHA256}  ${asset}" | sha256sum -c -
+          tar -xzf "$asset" gitleaks
+          ./gitleaks git . --redact --no-banner --exit-code 1
 
   dependency-audit:
     name: Production dependency audit

@@ -27,9 +27,9 @@ to a user's device.
 - Dependabot watches dependencies; `security.yml` fails when a high-severity
   advisory reaches a production dependency of the deployed bundle, and reports
   the full tree — the one the container image actually runs — without blocking
-- commits are scanned for secrets (gitleaks): each push and pull request scans
-  its own range — for pull requests that is the first 30 commits, merge commits
-  excluded — and a weekly run scans the full history
+- commits are scanned for secrets (gitleaks): every push, pull request and
+  scheduled run scans the full history, so a long pull request is covered in
+  full rather than only from its first commits
 - the deployed site sends CSP, HSTS, `nosniff`, `X-Frame-Options`,
   `Referrer-Policy` and `Permissions-Policy`
 - the container runs as the unprivileged `node` user

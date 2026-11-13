@@ -27,6 +27,19 @@ tracker:
         project: TSTAPP
         poll:
             enabled: true
+# Authorize Jira actors by explicit account ID instead of resolving Jira
+# project role names. With write:/triage: set, the poller never reads the
+# project role roster, so it no longer needs Administer Projects, and
+# actors cannot fall through to "external" when role membership is not
+# where the poller expects it.
+authorization:
+    - provider: jira
+      write:
+          accounts:
+              - 70121:fb5099b2-e796-48e1-b80e-16be004984fb
+      triage:
+          accounts:
+              - 70121:fb5099b2-e796-48e1-b80e-16be004984fb
 inference:
     project: it-gcp-fullsend-demo
     wif_provider: projects/508990529289/locations/global/workloadIdentityPools/fullsend-inference/providers/gh-fullsend-ai-react-shopping-ca

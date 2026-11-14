@@ -27,6 +27,9 @@ tracker:
         project: TSTAPP
         poll:
             enabled: true
+artifacts:
+    by_source:
+        jira: metadata
 inference:
     project: it-gcp-fullsend-demo
     wif_provider: projects/508990529289/locations/global/workloadIdentityPools/fullsend-inference/providers/gh-fullsend-ai-react-shopping-ca

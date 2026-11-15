@@ -20,6 +20,7 @@ This simple shopping cart prototype shows how React with Typescript, React hooks
 
 - Add and remove products from the floating cart using Context Api
 - Filter products by available sizes using Context Api
+- Filter products by brand (e.g. Red Hat) using Context Api
 - Responsive design
 
 <!--

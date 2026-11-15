@@ -37,8 +37,11 @@
 #
 # Branch protection is not configured; the controls do not depend on it.
 # Initial guard authorized by issue #11; the root firebase.json allowance
-# extends it for PR #74. The root README.md allowance covers the feature
-# documentation the code agent adds alongside its `src/` change (PR #96).
+# extends it for PR #74; the root README.md allowance is authorized by
+# issue #98, which records its scope, accepted risk and exit condition.
+# Any further widening of this allowlist must link an authorizing issue
+# before merge and cite it here — the header is how authority over this
+# gate is recorded, and a refusal is not an authorization.
 name: merge agent PRs on clean review
 
 on:

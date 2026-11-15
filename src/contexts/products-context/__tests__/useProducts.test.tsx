@@ -5,6 +5,7 @@ import { ProductsProvider } from '..';
 import useProducts from '../useProducts';
 
 import { mockProducts } from 'utils/test/mocks';
+import { getProducts } from 'services/products';
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <ProductsProvider>{children}</ProductsProvider>
@@ -15,12 +16,14 @@ describe('[contexts] - products-context', () => {
     let isFetching: boolean;
     let products: ICartProduct[];
     let filters: string[];
+    let brandFilters: string[];
     const originalUseContext = React.useContext;
 
     const setupMockUseContext = (options: { [key: string]: any } = {}) => {
       isFetching = false;
       products = options.initialProducts || [];
       filters = options.initialFilters || [];
+      brandFilters = options.initialBrandFilters || [];
 
       const mockSetIsFetching = jest.fn().mockImplementation((newState) => {
         isFetching = newState;
@@ -37,6 +40,12 @@ describe('[contexts] - products-context', () => {
         filters = activeFilters;
         return filters;
       });
+      const mockSetBrandFilters = jest
+        .fn()
+        .mockImplementation((activeBrandFilters) => {
+          brandFilters = activeBrandFilters;
+          return brandFilters;
+        });
 
       const mockUseContext = jest.fn().mockImplementation(() => ({
         isFetching: false,
@@ -45,6 +54,8 @@ describe('[contexts] - products-context', () => {
         setProducts: mockSetProducts,
         filters: options.initialFilters,
         setFilters: mockSetFilters,
+        brandFilters: options.initialBrandFilters,
+        setBrandFilters: mockSetBrandFilters,
       }));
       React.useContext = mockUseContext;
     };
@@ -93,6 +104,93 @@ describe('[contexts] - products-context', () => {
             title: 'Red Hat AI Black T-Shirt',
           },
         ]);
+      });
+
+      test('should keep the brand filter when filtering by size', async () => {
+        setupMockUseContext({
+          initialProducts: mockProducts,
+          initialBrandFilters: ['Red Hat'],
+        });
+
+        const { result } = renderHook(() => useProducts(), { wrapper });
+
+        await result.current.filterProducts(['M']);
+        expect(products.map((p) => p.title)).toEqual([
+          'Red Hat AI Black T-Shirt',
+        ]);
+        expect(filters).toEqual(['M']);
+        expect(brandFilters).toEqual(['Red Hat']);
+      });
+    });
+
+    describe('filterProductsByBrand', () => {
+      afterEach(() => {
+        resetMocks();
+      });
+
+      test('should show only products of the selected brand', async () => {
+        setupMockUseContext({ initialProducts: mockProducts });
+
+        const { result } = renderHook(() => useProducts(), { wrapper });
+
+        await result.current.filterProductsByBrand(['Red Hat']);
+        expect(products.map((p) => p.title)).toEqual([
+          'Red Hat AI Black T-Shirt',
+        ]);
+        expect(brandFilters).toEqual(['Red Hat']);
+      });
+
+      test('should combine the brand filter with the size filter', async () => {
+        setupMockUseContext({
+          initialProducts: mockProducts,
+          initialFilters: ['S'],
+        });
+
+        const { result } = renderHook(() => useProducts(), { wrapper });
+
+        await result.current.filterProductsByBrand(['Red Hat']);
+        expect(products.map((p) => p.title)).toEqual([
+          'Red Hat AI Black T-Shirt',
+        ]);
+        expect(filters).toEqual(['S']);
+      });
+
+      test('should return no products when the brand does not offer the size', async () => {
+        setupMockUseContext({
+          initialProducts: mockProducts,
+          initialFilters: ['X'],
+        });
+
+        const { result } = renderHook(() => useProducts(), { wrapper });
+
+        await result.current.filterProductsByBrand(['Red Hat']);
+        expect(products).toEqual([]);
+      });
+
+      test('should restore size-only filtering when the brand is cleared', async () => {
+        setupMockUseContext({
+          initialProducts: mockProducts,
+          initialFilters: ['M'],
+          initialBrandFilters: ['Red Hat'],
+        });
+
+        const { result } = renderHook(() => useProducts(), { wrapper });
+
+        await result.current.filterProductsByBrand([]);
+        expect(products.map((p) => p.title)).toEqual([
+          'Black Tule Oversized',
+          'Red Hat AI Black T-Shirt',
+        ]);
+        expect(brandFilters).toEqual([]);
+      });
+
+      test('should show all products when no filter is selected', async () => {
+        setupMockUseContext({ initialProducts: mockProducts });
+
+        const { result } = renderHook(() => useProducts(), { wrapper });
+
+        await result.current.filterProductsByBrand([]);
+        expect(products).toEqual(await getProducts());
       });
     });
   });

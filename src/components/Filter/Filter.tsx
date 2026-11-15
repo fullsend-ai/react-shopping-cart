@@ -4,21 +4,30 @@ import * as S from './style';
 
 export const availableSizes = ['XS', 'S', 'M', 'ML', 'L', 'XL', 'XXL'];
 
-const Filter = () => {
-  const { filters, filterProducts } = useProducts();
+export const availableBrands = ['Red Hat'];
 
-  const selectedCheckboxes = new Set(filters);
+const toggle = (selected: string[] | undefined, label: string): string[] => {
+  const selectedCheckboxes = new Set(selected);
+
+  if (selectedCheckboxes.has(label)) {
+    selectedCheckboxes.delete(label);
+  } else {
+    selectedCheckboxes.add(label);
+  }
+
+  return Array.from(selectedCheckboxes);
+};
+
+const Filter = () => {
+  const { filters, filterProducts, brandFilters, filterProductsByBrand } =
+    useProducts();
 
   const toggleCheckbox = (label: string) => {
-    if (selectedCheckboxes.has(label)) {
-      selectedCheckboxes.delete(label);
-    } else {
-      selectedCheckboxes.add(label);
-    }
+    filterProducts(toggle(filters, label));
+  };
 
-    const filters = Array.from(selectedCheckboxes) as [];
-
-    filterProducts(filters);
+  const toggleBrandCheckbox = (label: string) => {
+    filterProductsByBrand(toggle(brandFilters, label));
   };
 
   const createCheckbox = (label: string) => (
@@ -27,10 +36,22 @@ const Filter = () => {
 
   const createCheckboxes = () => availableSizes.map(createCheckbox);
 
+  const createBrandCheckbox = (label: string) => (
+    <S.BrandCheckbox
+      label={label}
+      handleOnChange={toggleBrandCheckbox}
+      key={label}
+    />
+  );
+
+  const createBrandCheckboxes = () => availableBrands.map(createBrandCheckbox);
+
   return (
     <S.Container>
       <S.Title>Sizes:</S.Title>
       {createCheckboxes()}
+      <S.Title>Brand:</S.Title>
+      {createBrandCheckboxes()}
     </S.Container>
   );
 };

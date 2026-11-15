@@ -3,6 +3,19 @@ import { useCallback } from 'react';
 import { useProductsContext } from './ProductsContextProvider';
 import { IProduct } from 'models';
 import { getProducts } from 'services/products';
+import matchesBrand from 'utils/matchesBrand';
+
+const matchesSizes = (product: IProduct, sizes: string[]) =>
+  !sizes ||
+  sizes.length === 0 ||
+  sizes.some((filter: string) =>
+    product.availableSizes.some((size: string) => size === filter)
+  );
+
+const matchesBrands = (product: IProduct, brands: string[]) =>
+  !brands ||
+  brands.length === 0 ||
+  brands.some((brand: string) => matchesBrand(product, brand));
 
 const useProducts = () => {
   const {
@@ -12,6 +25,8 @@ const useProducts = () => {
     setProducts,
     filters,
     setFilters,
+    brandFilters,
+    setBrandFilters,
   } = useProductsContext();
 
   const fetchProducts = useCallback(() => {
@@ -22,27 +37,27 @@ const useProducts = () => {
     });
   }, [setIsFetching, setProducts]);
 
-  const filterProducts = (filters: string[]) => {
+  const applyFilters = (sizes: string[], brands: string[]) => {
     setIsFetching(true);
 
     getProducts().then((products: IProduct[]) => {
       setIsFetching(false);
-      let filteredProducts;
 
-      if (filters && filters.length > 0) {
-        filteredProducts = products.filter((p: IProduct) =>
-          filters.find((filter: string) =>
-            p.availableSizes.find((size: string) => size === filter)
-          )
-        );
-      } else {
-        filteredProducts = products;
-      }
+      const filteredProducts = products.filter(
+        (p: IProduct) => matchesSizes(p, sizes) && matchesBrands(p, brands)
+      );
 
-      setFilters(filters);
+      setFilters(sizes);
+      setBrandFilters(brands);
       setProducts(filteredProducts);
     });
   };
+
+  const filterProducts = (filters: string[]) =>
+    applyFilters(filters, brandFilters);
+
+  const filterProductsByBrand = (brands: string[]) =>
+    applyFilters(filters, brands);
 
   return {
     isFetching,
@@ -50,6 +65,8 @@ const useProducts = () => {
     products,
     filterProducts,
     filters,
+    filterProductsByBrand,
+    brandFilters,
   };
 };
 

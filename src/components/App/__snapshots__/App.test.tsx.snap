@@ -6,7 +6,7 @@ Object {
   "baseElement": <body>
     <div>
       <div
-        class="sc-cBonQi"
+        class="sc-ciSkIB"
       >
         <div
           class="sc-bdnzMm gXfLVm"
@@ -53,16 +53,16 @@ Object {
           />
         </header>
         <main
-          class="sc-ciSkIB ibnuf"
+          class="sc-jcwmEk kA-DIer"
         >
           <div
-            class="sc-jcwmEk bMcSzW"
+            class="sc-carIbr dRxwhK"
           >
             <div
               class="sc-jSFiLV"
             >
               <h4
-                class="sc-iCoJwv dlrOmO"
+                class="sc-fujAuS dxDzXe"
               >
                 Sizes:
               </h4>
@@ -178,13 +178,34 @@ Object {
                   </span>
                 </label>
               </div>
+              <h4
+                class="sc-fujAuS dxDzXe"
+              >
+                Brand:
+              </h4>
+              <div
+                class="sc-gKzZKs sc-iCoJwv etuilD dVMMEz"
+              >
+                <label>
+                  <input
+                    data-testid="checkbox"
+                    type="checkbox"
+                    value="Red Hat"
+                  />
+                  <span
+                    class="checkmark"
+                  >
+                    Red Hat
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
           <main
-            class="sc-carIbr"
+            class="sc-iTVJXa"
           >
             <main
-              class="sc-iTVJXa fsjNb"
+              class="sc-iBzGPt cJIMHd"
             >
               <p>
                 0
@@ -192,21 +213,21 @@ Object {
               </p>
             </main>
             <div
-              class="sc-kslsOd jZvTdO"
+              class="sc-hBMWDO hhZXud"
             />
           </main>
         </main>
         <div
-          class="sc-iwajGE mteGL"
+          class="sc-cxNJCM gqnCd"
         >
           <button
-            class="sc-bCwhKV iOInZj"
+            class="sc-iwajGE jMOoGb"
           >
             <div
-              class="sc-cxNJCM bifUMm"
+              class="sc-lmgRDZ elLZhd"
             >
               <div
-                class="sc-lmgRDZ RuqFL"
+                class="sc-iJCTme jcEhDt"
                 title="Products in cart quantity"
               >
                 0
@@ -219,7 +240,7 @@ Object {
   </body>,
   "container": <div>
     <div
-      class="sc-cBonQi"
+      class="sc-ciSkIB"
     >
       <div
         class="sc-bdnzMm gXfLVm"
@@ -266,16 +287,16 @@ Object {
         />
       </header>
       <main
-        class="sc-ciSkIB ibnuf"
+        class="sc-jcwmEk kA-DIer"
       >
         <div
-          class="sc-jcwmEk bMcSzW"
+          class="sc-carIbr dRxwhK"
         >
           <div
             class="sc-jSFiLV"
           >
             <h4
-              class="sc-iCoJwv dlrOmO"
+              class="sc-fujAuS dxDzXe"
             >
               Sizes:
             </h4>
@@ -391,13 +412,34 @@ Object {
                 </span>
               </label>
             </div>
+            <h4
+              class="sc-fujAuS dxDzXe"
+            >
+              Brand:
+            </h4>
+            <div
+              class="sc-gKzZKs sc-iCoJwv etuilD dVMMEz"
+            >
+              <label>
+                <input
+                  data-testid="checkbox"
+                  type="checkbox"
+                  value="Red Hat"
+                />
+                <span
+                  class="checkmark"
+                >
+                  Red Hat
+                </span>
+              </label>
+            </div>
           </div>
         </div>
         <main
-          class="sc-carIbr"
+          class="sc-iTVJXa"
         >
           <main
-            class="sc-iTVJXa fsjNb"
+            class="sc-iBzGPt cJIMHd"
           >
             <p>
               0
@@ -405,21 +447,21 @@ Object {
             </p>
           </main>
           <div
-            class="sc-kslsOd jZvTdO"
+            class="sc-hBMWDO hhZXud"
           />
         </main>
       </main>
       <div
-        class="sc-iwajGE mteGL"
+        class="sc-cxNJCM gqnCd"
       >
         <button
-          class="sc-bCwhKV iOInZj"
+          class="sc-iwajGE jMOoGb"
         >
           <div
-            class="sc-cxNJCM bifUMm"
+            class="sc-lmgRDZ elLZhd"
           >
             <div
-              class="sc-lmgRDZ RuqFL"
+              class="sc-iJCTme jcEhDt"
               title="Products in cart quantity"
             >
               0

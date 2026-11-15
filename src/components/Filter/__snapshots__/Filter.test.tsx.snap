@@ -9,7 +9,7 @@ Object {
         class="sc-bdnzMm"
       >
         <h4
-          class="sc-dlnlqM bgJxzC"
+          class="sc-hKFxhv xyewD"
         >
           Sizes:
         </h4>
@@ -125,6 +125,27 @@ Object {
             </span>
           </label>
         </div>
+        <h4
+          class="sc-hKFxhv xyewD"
+        >
+          Brand:
+        </h4>
+        <div
+          class="sc-gtsusp sc-dlnlqM exoFDh byFNcr"
+        >
+          <label>
+            <input
+              data-testid="checkbox"
+              type="checkbox"
+              value="Red Hat"
+            />
+            <span
+              class="checkmark"
+            >
+              Red Hat
+            </span>
+          </label>
+        </div>
       </div>
     </div>
   </body>,
@@ -133,7 +154,7 @@ Object {
       class="sc-bdnzMm"
     >
       <h4
-        class="sc-dlnlqM bgJxzC"
+        class="sc-hKFxhv xyewD"
       >
         Sizes:
       </h4>
@@ -246,6 +267,27 @@ Object {
             class="checkmark"
           >
             XXL
+          </span>
+        </label>
+      </div>
+      <h4
+        class="sc-hKFxhv xyewD"
+      >
+        Brand:
+      </h4>
+      <div
+        class="sc-gtsusp sc-dlnlqM exoFDh byFNcr"
+      >
+        <label>
+          <input
+            data-testid="checkbox"
+            type="checkbox"
+            value="Red Hat"
+          />
+          <span
+            class="checkmark"
+          >
+            Red Hat
           </span>
         </label>
       </div>

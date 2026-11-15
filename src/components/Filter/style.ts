@@ -75,6 +75,24 @@ export const Checkbox = styled(CB)`
   }
 `;
 
+/* Brand names are longer than size labels, so the round fixed-width
+   checkbox becomes a pill that grows with its text */
+export const BrandCheckbox = styled(Checkbox)`
+  label {
+    width: auto;
+    border-radius: 18px;
+
+    .checkmark {
+      position: relative;
+      display: inline-block;
+      width: auto;
+      padding: 0 15px;
+      border-radius: 18px;
+      white-space: nowrap;
+    }
+  }
+`;
+
 export const Title = styled.h4`
   margin-top: 2px;
   margin-bottom: 20px;

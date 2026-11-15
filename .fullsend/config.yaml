@@ -20,6 +20,10 @@ agents:
       source: triage.yaml
     # The Jira poller only evaluates agents registered here, so /fs-code needs
     # this entry to dispatch. Pinned to the agents v0.56.1 release.
+    #
+    # Authorization is by Jira project role (no `authorization:` block), so
+    # anyone in TSTAPP's "Developers" role can start code — including people
+    # without GitHub access. Accepted for this demo, see #95.
     - name: code
       source: https://raw.githubusercontent.com/fullsend-ai/agents/62f25ace461b9c11a712bf5762f6e881892e4b74/harness/code.yaml#sha256=2cf45a3a4409bee748cf0f0d5f1fb6cd7287677145f5f44d0b9e9b1fd19e93db
 allowed_remote_resources:

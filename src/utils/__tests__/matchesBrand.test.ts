@@ -54,4 +54,19 @@ describe('[utils] - matchesBrand', () => {
       matchesBrand({ title: 'Wine Red', description: 'Hat' }, 'Red Hat')
     ).toBe(false);
   });
+
+  test('should only match the brand as whole words', () => {
+    expect(
+      matchesBrand({ title: 'Bored Hat Tee', description: '' }, 'Red Hat')
+    ).toBe(false);
+    expect(
+      matchesBrand(
+        { title: 'Black T-shirt', description: 'Red Hatchback print' },
+        'Red Hat'
+      )
+    ).toBe(false);
+    expect(
+      matchesBrand({ title: 'Cap (Red Hat)', description: '' }, 'Red Hat')
+    ).toBe(true);
+  });
 });

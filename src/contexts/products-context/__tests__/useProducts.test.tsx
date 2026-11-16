@@ -136,6 +136,7 @@ describe('[contexts] - products-context', () => {
         await result.current.filterProductsByBrand(['Red Hat']);
         expect(products.map((p) => p.title)).toEqual([
           'Red Hat AI Black T-Shirt',
+          'Craghoppers Grey Half Zip Fleece',
         ]);
         expect(brandFilters).toEqual(['Red Hat']);
       });
@@ -151,6 +152,7 @@ describe('[contexts] - products-context', () => {
         await result.current.filterProductsByBrand(['Red Hat']);
         expect(products.map((p) => p.title)).toEqual([
           'Red Hat AI Black T-Shirt',
+          'Craghoppers Grey Half Zip Fleece',
         ]);
         expect(filters).toEqual(['S']);
       });

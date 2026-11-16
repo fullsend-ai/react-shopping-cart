@@ -221,6 +221,19 @@
         "sku": 1771149885871948,
         "style": "Red Hat AI logo",
         "title": "Red Hat AI Black T-Shirt"
+      },
+      {
+        "availableSizes": ["S", "XXL"],
+        "currencyFormat": "$",
+        "currencyId": "USD",
+        "description": "100% recycled microfleece, 205gsm, Red Hat logo embroidery",
+        "id": 17,
+        "installments": 0,
+        "isFreeShipping": true,
+        "price": 48.63,
+        "sku": 4802531667943152,
+        "style": "RHNL-032",
+        "title": "Craghoppers Grey Half Zip Fleece"
       }
     ]
   }

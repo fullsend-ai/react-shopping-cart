@@ -48,11 +48,39 @@ describe('[components] - Filter', () => {
     expect(screen.getByText('0 Product(s) found')).toBeInTheDocument();
 
     await userEvent.click(screen.getByLabelText('Red Hat'));
-    expect(await screen.findByText('1 Product(s) found')).toBeInTheDocument();
+    expect(await screen.findByText('2 Product(s) found')).toBeInTheDocument();
     expect(screen.getByLabelText('Red Hat')).toBeChecked();
 
     await userEvent.click(screen.getByLabelText('Red Hat'));
-    expect(await screen.findByText('17 Product(s) found')).toBeInTheDocument();
+    expect(await screen.findByText('18 Product(s) found')).toBeInTheDocument();
     expect(screen.getByLabelText('Red Hat')).not.toBeChecked();
   });
+
+  test.each(['S', 'XXL', 'Red Hat'])(
+    'should show the Craghoppers Grey Half Zip Fleece when filtering by %s',
+    async (label) => {
+      const ProductTitles = () => {
+        const { products } = useProducts();
+        return (
+          <ul>
+            {products.map(({ id, title }) => (
+              <li key={id}>{title}</li>
+            ))}
+          </ul>
+        );
+      };
+
+      renderWithThemeProvider(
+        <ProductsProvider>
+          <Filter />
+          <ProductTitles />
+        </ProductsProvider>
+      );
+
+      await userEvent.click(screen.getByLabelText(label));
+      expect(
+        await screen.findByText('Craghoppers Grey Half Zip Fleece')
+      ).toBeInTheDocument();
+    }
+  );
 });

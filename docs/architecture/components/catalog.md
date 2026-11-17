@@ -4,7 +4,8 @@ The catalog is one JSON file,
 [`src/static/json/products.json`](../../../src/static/json/products.json), with
 the products under `data.products`. `src/services/products.ts` loads it with a
 build-time `require()`. It has no backend, admin screen or database. Adding a
-product is a PR that changes this file and adds three images.
+product is a PR that changes this file, with its three images already on
+`main` or added in the same PR.
 
 ## Product schema
 
@@ -91,8 +92,10 @@ looks the name up when the card or cart line renders. A missing file throws
 whole page goes blank. `npm run build` still succeeds, and the shared test
 suite does not catch it either. Only the per-product tests in
 `Product.test.tsx` check that a product's images resolve. Every new product
-should get such a test, and its images must ship in the same PR as its
-catalog entry.
+should get such a test. Its images must be on the branch no later than its
+catalog entry: already on `main`, or in the same PR. Images that land first
+are harmless (nothing references them), and the product PR then uses them
+as they are.
 
 ## Tests that count products
 

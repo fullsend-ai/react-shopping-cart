@@ -16,8 +16,11 @@ renders one line per product:
 
 - the `{sku}-1-cart.webp` thumbnail ([catalog images](catalog.md#product-images))
 - the title
-- `"{first size} | {style}"`, or just `"{style}"` when the product has no sizes
-  ([decision 0004](../decisions/0004-size-optional.md))
+- `"{first size} | {style}"`. For a product with no sizes,
+  [decision 0004](../decisions/0004-size-optional.md) requires just
+  `"{style}"`, but that is **not implemented yet**: today the line prints
+  `"undefined | {style}"` (`CartProduct.tsx` always reads `availableSizes[0]`).
+  The first story that adds a size-less product must fix it.
 - `Quantity: N`
 - the unit price and − / + buttons. − is disabled at quantity 1. The ×
   button removes the line.

@@ -63,8 +63,10 @@ New store products so far have used `isFreeShipping: true` and
   integer (`Number.isSafeInteger`), not just its digit count: a 16-digit
   number can still be over the limit.
 - **Existing SKUs** are 15 to 17 digits, and 12 of the 19 are above the
-  safe-integer limit. They happen to be exactly representable, so they parse
-  unchanged and their images resolve. Do not renumber or "fix" them: the
+  safe-integer limit. Their images resolve today only because JavaScript
+  prints the shortest string that round-trips: some of them (for example
+  `51498472915966370`) are stored as a different double. That is not a safe
+  basis for new SKUs. Do not renumber or "fix" them: the
   image files are named after them. Do not copy them as a pattern for new
   SKUs either.
 

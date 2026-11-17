@@ -18,7 +18,7 @@ or cart, and copy changes.
 | **Catalog is static**        | Products live in `src/static/json/products.json` and are built into the bundle. No admin UI or live catalog updates. A product change is a PR and a redeploy.                                   | `src/services/products.ts`                                       |
 | **No user accounts or auth** | No sign-in, profiles, wish lists, order history or per-user prices.                                                                                                                             | no auth code in `src/`                                           |
 | **TypeScript 4.9**           | `react-scripts` 5 needs the TypeScript 4.x compiler API. Do not use TypeScript 5+ features (for example `NoInfer`, `const` type parameters).                                                    | [`AGENTS.md`](../../AGENTS.md)                                   |
-| **Strict CSP**               | Scripts may come only from the site itself and Google Tag Manager. Fetches may go only to the site itself and Google Analytics. A new third-party widget or API needs a `firebase.json` change. | `firebase.json`                                                  |
+| **Content Security Policy**  | Scripts may come only from the site itself and Google Tag Manager (inline scripts and styles are allowed: `'unsafe-inline'`). Fetches may go only to the site itself, Google Tag Manager and Google Analytics. A new third-party widget or API needs a `firebase.json` change. | `firebase.json`                                                  |
 
 ## Commerce
 

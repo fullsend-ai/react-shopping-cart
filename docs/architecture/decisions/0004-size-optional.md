@@ -20,8 +20,10 @@ have no size.
   With any size selected, it is excluded
   ([filter](../components/filter.md#how-the-filters-combine)). This is the
   intended behaviour and is covered by tests.
-- **Cart line:** shows only the `style` (for example `RHNLOD-044`), not
-  `"{first size} | {style}"`. It must never print `undefined`
-  ([cart](../components/cart.md#cart-line)).
+- **Cart line:** must show only the `style` (for example `RHNLOD-044`), not
+  `"{first size} | {style}"`, and must never print `undefined`
+  ([cart](../components/cart.md#cart-line)). **Not implemented yet:** the
+  current cart line prints `"undefined | {style}"` for a product with no
+  sizes, so the first story that adds one carries this fix.
 - **Product card:** unaffected. It does not show sizes.
 - Any new UI that reads `availableSizes` must handle `[]`.

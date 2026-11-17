@@ -234,6 +234,19 @@
         "sku": 4802531667943152,
         "style": "RHNL-032",
         "title": "Craghoppers Grey Half Zip Fleece"
+      },
+      {
+        "availableSizes": ["S", "XL", "XXL"],
+        "currencyFormat": "$",
+        "currencyId": "USD",
+        "description": "52% ring-spun cotton / 48% polyester, 220gsm",
+        "id": 18,
+        "installments": 0,
+        "isFreeShipping": true,
+        "price": 35.92,
+        "sku": 6023683633399845,
+        "style": "RHNL-031",
+        "title": "Pullover Heather Grey Hoodie Unisex"
       }
     ]
   }

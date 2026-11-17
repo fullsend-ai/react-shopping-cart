@@ -2,6 +2,11 @@ import { useCartContext } from './CartContextProvider';
 import useCartTotal from './useCartTotal';
 import { ICartProduct } from 'models';
 
+// A cart line is one product in one color. Products without colors have
+// no `color`, so they still match on `id` alone.
+const isSameLine = (a: ICartProduct, b: ICartProduct) =>
+  a.id === b.id && a.color === b.color;
+
 const useCartProducts = () => {
   const { products, setProducts } = useCartContext();
   const { updateCartTotal } = useCartTotal();
@@ -11,7 +16,7 @@ const useCartProducts = () => {
     targetProduct: ICartProduct,
     quantity: number
   ): ICartProduct => {
-    if (currentProduct.id === targetProduct.id) {
+    if (isSameLine(currentProduct, targetProduct)) {
       return Object.assign({
         ...currentProduct,
         quantity: currentProduct.quantity + quantity,
@@ -23,8 +28,8 @@ const useCartProducts = () => {
 
   const addProduct = (newProduct: ICartProduct) => {
     let updatedProducts;
-    const isProductAlreadyInCart = products.some(
-      (product: ICartProduct) => newProduct.id === product.id
+    const isProductAlreadyInCart = products.some((product: ICartProduct) =>
+      isSameLine(newProduct, product)
     );
 
     if (isProductAlreadyInCart) {
@@ -41,7 +46,7 @@ const useCartProducts = () => {
 
   const removeProduct = (productToRemove: ICartProduct) => {
     const updatedProducts = products.filter(
-      (product: ICartProduct) => product.id !== productToRemove.id
+      (product: ICartProduct) => !isSameLine(product, productToRemove)
     );
 
     setProducts(updatedProducts);

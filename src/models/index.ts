@@ -10,10 +10,12 @@ export interface IProduct {
   currencyId: string;
   currencyFormat: string;
   isFreeShipping: boolean;
+  availableColors?: string[];
 }
 
 export interface ICartProduct extends IProduct {
   quantity: number;
+  color?: string;
 }
 
 export interface ICartTotal {

@@ -1,6 +1,6 @@
 # 0004: Size is optional
 
-**Status:** accepted · **Source:** TSTAPP-5
+**Status:** accepted · **Source:** TSTAPP-5, filtering amended by TSTAPP-6
 
 ## Context
 
@@ -16,16 +16,17 @@ have no size.
 
 ## Consequences
 
-- **Filtering:** with no size selected, a product with no sizes is listed.
-  With any size selected, it is excluded
-  ([filter](../components/filter.md#how-the-filters-combine)). This is the
-  intended behaviour. `matchesSizes` (`useProducts.tsx`) implements it, but
-  no test covers it yet: no mock or catalog product has `availableSizes: []`.
-  The first story that adds a size-less product should add that test.
-- **Cart line:** must show only the `style` (for example `RHNLOD-044`), not
-  `"{first size} | {style}"`, and must never print `undefined`
-  ([cart](../components/cart.md#cart-line)). **Not implemented yet:** the
-  current cart line prints `"undefined | {style}"` for a product with no
-  sizes, so the first story that adds one carries this fix.
+- **Filtering:** a product with no sizes is listed whatever sizes are
+  selected, including none
+  ([filter](../components/filter.md#how-the-filters-combine)). This applies to
+  every size-less product, with no per-product flag. TSTAPP-6 (SME answer,
+  option A) amended it: before, a size-less product was excluded as soon as
+  a size was selected. `matchesSizes` (`useProducts.tsx`) implements it, and
+  the size-filter tests in `useProducts.test.tsx` and `Filter.test.tsx`
+  cover it.
+- **Cart line:** shows only the parts that are present, so no size for a
+  size-less product: just the `style` (for example `RHNLOD-044`), or the
+  chosen color when the style is empty. It never prints `undefined`
+  ([cart](../components/cart.md#cart-line)). Implemented by TSTAPP-6.
 - **Product card:** unaffected. It does not show sizes.
 - Any new UI that reads `availableSizes` must handle `[]`.

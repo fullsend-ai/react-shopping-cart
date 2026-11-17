@@ -19,8 +19,13 @@ const CartProduct = ({ product }: IProps) => {
     currencyId,
     currencyFormat,
     availableSizes,
+    color,
     quantity,
   } = product;
+
+  // Size-less products have no first size and may have no style, so join
+  // only the parts that are present (never print "undefined").
+  const desc = [availableSizes[0], color, style].filter(Boolean).join(' | ');
 
   const handleRemoveProduct = () => removeProduct(product);
   const handleIncreaseProductQuantity = () => increaseProductQuantity(product);
@@ -39,7 +44,7 @@ const CartProduct = ({ product }: IProps) => {
       <S.Details>
         <S.Title>{title}</S.Title>
         <S.Desc>
-          {`${availableSizes[0]} | ${style}`} <br />
+          {desc} <br />
           Quantity: {quantity}
         </S.Desc>
       </S.Details>

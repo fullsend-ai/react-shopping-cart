@@ -103,6 +103,21 @@ describe('[contexts] - products-context', () => {
             style: 'Red Hat AI logo',
             title: 'Red Hat AI Black T-Shirt',
           },
+          {
+            availableColors: ['Black', 'White'],
+            availableSizes: [],
+            currencyFormat: '$',
+            currencyId: 'USD',
+            description:
+              '21 oz insulated stainless steel water bottle, Standard Mouth, Red Hat logo print',
+            id: 21,
+            installments: 0,
+            isFreeShipping: true,
+            price: 34.95,
+            sku: 2121000000000001,
+            style: '',
+            title: 'Hydro Flask 21 oz Standard Mouth water bottle',
+          },
         ]);
       });
 
@@ -117,10 +132,58 @@ describe('[contexts] - products-context', () => {
         await result.current.filterProducts(['M']);
         expect(products.map((p) => p.title)).toEqual([
           'Red Hat AI Black T-Shirt',
+          'Hydro Flask 21 oz Standard Mouth water bottle',
         ]);
         expect(filters).toEqual(['M']);
         expect(brandFilters).toEqual(['Red Hat']);
       });
+    });
+
+    describe('size-less products', () => {
+      afterEach(() => {
+        resetMocks();
+      });
+
+      test.each([
+        [['S'], []],
+        [['S', 'XL'], []],
+        [['S'], ['Red Hat']],
+      ])(
+        'should list every product with no sizes when filtering by %p and brand %p',
+        async (sizes, brands) => {
+          setupMockUseContext({
+            initialProducts: mockProducts,
+            initialBrandFilters: brands,
+          });
+          const catalog = await getProducts();
+          const sizeless = catalog.filter((p) => p.availableSizes.length === 0);
+
+          const { result } = renderHook(() => useProducts(), { wrapper });
+
+          await result.current.filterProducts(sizes);
+          const titles = products.map((p) => p.title);
+
+          expect(sizeless.length).toBeGreaterThan(0);
+          expect(titles).toContain(
+            'Hydro Flask 21 oz Standard Mouth water bottle'
+          );
+          sizeless.forEach(({ title }) => expect(titles).toContain(title));
+          products
+            .filter((p) => p.availableSizes.length > 0)
+            .forEach((p) => {
+              expect(
+                p.availableSizes.some((size) => sizes.includes(size))
+              ).toBe(true);
+            });
+          expect(
+            catalog.filter(
+              (p) =>
+                p.availableSizes.length > 0 &&
+                !p.availableSizes.some((size) => sizes.includes(size))
+            ).length
+          ).toBeGreaterThan(0);
+        }
+      );
     });
 
     describe('filterProductsByBrand', () => {
@@ -138,6 +201,7 @@ describe('[contexts] - products-context', () => {
           'Red Hat AI Black T-Shirt',
           'Craghoppers Grey Half Zip Fleece',
           'Pullover Heather Grey Hoodie Unisex',
+          'Hydro Flask 21 oz Standard Mouth water bottle',
         ]);
         expect(brandFilters).toEqual(['Red Hat']);
       });
@@ -155,11 +219,12 @@ describe('[contexts] - products-context', () => {
           'Red Hat AI Black T-Shirt',
           'Craghoppers Grey Half Zip Fleece',
           'Pullover Heather Grey Hoodie Unisex',
+          'Hydro Flask 21 oz Standard Mouth water bottle',
         ]);
         expect(filters).toEqual(['S']);
       });
 
-      test('should return no products when the brand does not offer the size', async () => {
+      test('should return only size-less products when the brand does not offer the size', async () => {
         setupMockUseContext({
           initialProducts: mockProducts,
           initialFilters: ['X'],
@@ -168,7 +233,9 @@ describe('[contexts] - products-context', () => {
         const { result } = renderHook(() => useProducts(), { wrapper });
 
         await result.current.filterProductsByBrand(['Red Hat']);
-        expect(products).toEqual([]);
+        expect(products.map((p) => p.title)).toEqual([
+          'Hydro Flask 21 oz Standard Mouth water bottle',
+        ]);
       });
 
       test('should restore size-only filtering when the brand is cleared', async () => {
@@ -184,6 +251,7 @@ describe('[contexts] - products-context', () => {
         expect(products.map((p) => p.title)).toEqual([
           'Black Tule Oversized',
           'Red Hat AI Black T-Shirt',
+          'Hydro Flask 21 oz Standard Mouth water bottle',
         ]);
         expect(brandFilters).toEqual([]);
       });

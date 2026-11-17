@@ -16,19 +16,38 @@ renders one line per product:
 
 - the `{sku}-1-cart.webp` thumbnail ([catalog images](catalog.md#product-images))
 - the title
-- `"{first size} | {style}"`. For a product with no sizes,
-  [decision 0004](../decisions/0004-size-optional.md) requires just
-  `"{style}"`, but that is **not implemented yet**: today the line prints
-  `"undefined | {style}"` (`CartProduct.tsx` always reads `availableSizes[0]`).
-  The first story that adds a size-less product must fix it.
+- the parts that are present, joined with `" | "`: the first size, the chosen
+  color and the style. Apparel shows `"{first size} | {style}"` (for example
+  `"S | RHNL-032"`). A size-less product skips the size, and an empty style is
+  skipped too, so the TSTAPP-6 bottle shows just `"Black"` or `"White"`. The
+  line never prints `undefined`
+  ([decision 0004](../decisions/0004-size-optional.md)).
 - `Quantity: N`
 - the unit price and − / + buttons. − is disabled at quantity 1. The ×
   button removes the line.
 
-A product appears once, and adding it again increases the quantity. Lines are
-matched by product `id`. The shopper **does not choose a size**: the line shows the
+A product appears once per color, and adding it again increases the quantity.
+Lines are matched by product `id` and `color`. Products without colors have
+no `color`, so they match on `id` alone. The cart list keys each line by
+`id` and `color`. The shopper **does not choose a size**: the line shows the
 product's first listed size. Per-line size choice would be a new feature
 across the card, the cart model and the cart line.
+
+## Color choice
+
+A product with `availableColors` ([catalog](catalog.md#product-schema)) shows
+a "Color" radio group on its card, with nothing preselected (TSTAPP-6, the
+first product with colors).
+
+- Until a color is chosen, "Add to cart" is disabled and described by a
+  visible "Choose a color" hint, and Enter or Space on the card adds nothing.
+- The radios keep their native keys (arrows move, Space selects). Their key
+  events do not reach the card, so choosing a color never adds to the cart.
+- The choice is card state. It stays chosen after adding and resets only when
+  the card unmounts.
+- The cart line gets the chosen `color`, and each color is its own line. Every
+  line uses the product's single `-1-cart` thumbnail; the line text names the
+  color. There are no per-color images, SKUs, stock or color filter.
 
 ## Subtotal
 

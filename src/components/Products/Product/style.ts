@@ -14,6 +14,48 @@ export const BuyButton = styled.button`
   &:focus-visible {
     outline: 3px solid ${({ theme }) => theme.colors.secondary};
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+`;
+
+export const ColorPicker = styled.fieldset`
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 10px 0 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    padding: 0;
+    margin-bottom: 5px;
+    width: 100%;
+  }
+`;
+
+export const ColorOption = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+
+  input {
+    margin: 0;
+    accent-color: ${({ theme }) => theme.colors.primary};
+    cursor: pointer;
+  }
+
+  input:focus-visible {
+    outline: 3px solid ${({ theme }) => theme.colors.secondary};
+  }
+`;
+
+export const ColorHint = styled.p`
+  margin: 5px 0 0;
+  color: #9c9b9b;
 `;
 
 interface IImage {
@@ -69,7 +111,7 @@ export const Container = styled.div<IContainer>`
         `url(${require(`static/products/${$sku}-2-product.webp`)})`};
     }
 
-    ${BuyButton} {
+    ${BuyButton}:not(:disabled) {
       background-color: ${({ theme }) => theme.colors.secondary};
     }
   }

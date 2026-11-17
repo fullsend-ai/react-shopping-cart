@@ -480,7 +480,7 @@ describe('[components] - Product', () => {
 
       expect(cartLineTexts()).toHaveLength(0);
       expect(screen.getByTitle('Products in cart quantity')).toHaveTextContent(
-        '0'
+        /^0$/
       );
     });
 
@@ -500,7 +500,7 @@ describe('[components] - Product', () => {
 
       expect(cartLineTexts()).toHaveLength(0);
       expect(screen.getByTitle('Products in cart quantity')).toHaveTextContent(
-        '0'
+        /^0$/
       );
       expect(screen.queryByText('Choose a color')).not.toBeInTheDocument();
       expect(

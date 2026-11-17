@@ -14,7 +14,9 @@ State is held in React `useState` only. Reloading the page empties the cart.
 [`CartProduct.tsx`](../../../src/components/Cart/CartProducts/CartProduct/CartProduct.tsx)
 renders one line per product:
 
-- the `{sku}-1-cart.webp` thumbnail ([catalog images](catalog.md#product-images))
+- the `{sku}-1-cart.webp` thumbnail, or for a line with a color, the
+  `{sku}-N-cart.webp` that the product's `colorImages` maps that color to
+  ([catalog images](catalog.md#product-images))
 - the title
 - the parts that are present, joined with `" | "`: the first size, the chosen
   color and the style. Apparel shows `"{first size} | {style}"` (for example
@@ -49,9 +51,16 @@ first product with colors).
   adding is now possible.
 - The choice is card state. It stays chosen after adding and resets only when
   the card unmounts.
-- The cart line gets the chosen `color`, and each color is its own line. Every
-  line uses the product's single `-1-cart` thumbnail; the line text names the
-  color. There are no per-color images, SKUs, stock or color filter.
+- Choosing a color switches the card image to that color's image (from
+  `colorImages`), on the front and on hover. Before a color is chosen, the
+  card shows image 1 with image 2 on hover.
+- The cart line gets the chosen `color`, and each color is its own line. Its
+  thumbnail is the color's `{sku}-N-cart.webp` from `colorImages` (the
+  bottle: Black `-1-cart`, White `-2-cart`), and the line text names the
+  color. There are no per-color SKUs, stock or color filter.
+- The card is a flex column with the price and "Add to cart" at the bottom,
+  so the color picker and hint do not push its button below the buttons of
+  the other cards in the row.
 
 ## Subtotal
 

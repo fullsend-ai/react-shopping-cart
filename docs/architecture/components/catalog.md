@@ -10,23 +10,24 @@ product is a PR that changes this file, with its three images already on
 ## Product schema
 
 Every entry has all eleven required fields, plus the optional
-`availableColors` (`IProduct` in
+`availableColors` and `colorImages` (`IProduct` in
 [`src/models/index.ts`](../../../src/models/index.ts)):
 
-| Field             | Type     | Rule                                                                                                                                                                                                                           |
-| ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`              | number   | Sequential. The next product takes the next free integer. Unique.                                                                                                                                                              |
-| `sku`             | number   | Unique product code. It also names the image files. See [id and SKU rules](#id-and-sku-rules).                                                                                                                                 |
-| `title`           | string   | Product name shown on the card and in the cart.                                                                                                                                                                                |
-| `description`     | string   | Short copy (fabric, weight, decoration). Not shown on the card, but the brand filter reads it.                                                                                                                                 |
-| `availableSizes`  | string[] | Sizes from the [filter vocabulary](filter.md#size-vocabulary). May be `[]` for products with no size ([decision 0004](../decisions/0004-size-optional.md)).                                                                    |
-| `style`           | string   | Store code or style name (for example `RHNL-032`). Shown in the cart line. May be `""`.                                                                                                                                        |
-| `price`           | number   | USD, two decimals at most, never re-rounded to a retail price ([decision 0001](../decisions/0001-eur-to-usd.md)).                                                                                                              |
-| `installments`    | number   | Number of payments shown as "or N x $…". `0` hides it.                                                                                                                                                                         |
-| `currencyId`      | string   | Always `"USD"`.                                                                                                                                                                                                                |
-| `currencyFormat`  | string   | Always `"$"`.                                                                                                                                                                                                                  |
-| `isFreeShipping`  | boolean  | Shows the "Free shipping" badge on the card.                                                                                                                                                                                   |
-| `availableColors` | string[] | Optional, last in the entry. Colors the shopper chooses between on the card before adding (for example `["Black", "White"]`, TSTAPP-6). Leave it out for products sold in one color. See [color choice](cart.md#color-choice). |
+| Field             | Type     | Rule                                                                                                                                                                                                                                                       |
+| ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`              | number   | Sequential. The next product takes the next free integer. Unique.                                                                                                                                                                                          |
+| `sku`             | number   | Unique product code. It also names the image files. See [id and SKU rules](#id-and-sku-rules).                                                                                                                                                             |
+| `title`           | string   | Product name shown on the card and in the cart.                                                                                                                                                                                                            |
+| `description`     | string   | Short copy (fabric, weight, decoration). Not shown on the card, but the brand filter reads it.                                                                                                                                                             |
+| `availableSizes`  | string[] | Sizes from the [filter vocabulary](filter.md#size-vocabulary). May be `[]` for products with no size ([decision 0004](../decisions/0004-size-optional.md)).                                                                                                |
+| `style`           | string   | Store code or style name (for example `RHNL-032`). Shown in the cart line. May be `""`.                                                                                                                                                                    |
+| `price`           | number   | USD, two decimals at most, never re-rounded to a retail price ([decision 0001](../decisions/0001-eur-to-usd.md)).                                                                                                                                          |
+| `installments`    | number   | Number of payments shown as "or N x $…". `0` hides it.                                                                                                                                                                                                     |
+| `currencyId`      | string   | Always `"USD"`.                                                                                                                                                                                                                                            |
+| `currencyFormat`  | string   | Always `"$"`.                                                                                                                                                                                                                                              |
+| `isFreeShipping`  | boolean  | Shows the "Free shipping" badge on the card.                                                                                                                                                                                                               |
+| `availableColors` | string[] | Optional, after the required fields. Colors the shopper chooses between on the card before adding (for example `["Black", "White"]`, TSTAPP-6). Leave it out for products sold in one color. See [color choice](cart.md#color-choice).                     |
+| `colorImages`     | object   | Optional, after `availableColors`. The image number for each color (for example `{ "Black": 1, "White": 2 }`): the card and the cart line show `{sku}-N-product.webp` and `{sku}-N-cart.webp` for the chosen color. See [product images](#product-images). |
 
 Example (the Craghoppers fleece added by TSTAPP-2):
 
@@ -49,8 +50,8 @@ Example (the Craghoppers fleece added by TSTAPP-2):
 The schema has no fields for stock, order limits, categories, brand or a
 product page URL. Adding one is a model change (`IProduct`, and the test
 mocks and every product entry if the field is required), not a data change.
-An optional field, like `availableColors`, leaves existing entries and mocks
-valid.
+An optional field, like `availableColors` or `colorImages`, leaves existing
+entries and mocks valid.
 
 `isFreeShipping` and `installments` have no fixed default: take them from the
 story. The TSTAPP products so far (TSTAPP-2, TSTAPP-3) used
@@ -86,6 +87,15 @@ Each product needs three WebP files in `src/static/products/`, named by SKU:
 | `{sku}-1-product.webp` | product card (`Products/Product/style.ts`) | front view, full frame                                                                                     |
 | `{sku}-2-product.webp` | product card on hover                      | back or alternate view. Must differ from the front ([decision 0003](../decisions/0003-distinct-images.md)) |
 | `{sku}-1-cart.webp`    | cart line (`CartProduct.tsx`)              | front view, downscaled                                                                                     |
+
+A product with `colorImages` also needs a `{sku}-N-cart.webp` for every
+image number N it maps (front view, the same size as the `-1-cart` files). The
+TSTAPP-6 bottle maps Black to 1 and White to 2, so it has
+`2121000000000001-2-cart.webp`, downscaled from its white
+`2121000000000001-2-product.webp`. On its card, image 1 is the front and
+image 2 the hover until a color is chosen; after that both show the chosen
+color's image. Products without `colorImages` always use the three files
+above.
 
 Match the size of existing images. Source photos from the store are usually
 500×500 PNG or JPG and must be converted to WebP.

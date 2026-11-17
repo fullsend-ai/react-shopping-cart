@@ -260,7 +260,8 @@
         "sku": 2121000000000001,
         "style": "",
         "title": "Hydro Flask 21 oz Standard Mouth water bottle",
-        "availableColors": ["Black", "White"]
+        "availableColors": ["Black", "White"],
+        "colorImages": { "Black": 1, "White": 2 }
       }
     ]
   }

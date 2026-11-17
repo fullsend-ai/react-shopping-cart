@@ -11,6 +11,8 @@ export interface IProduct {
   currencyFormat: string;
   isFreeShipping: boolean;
   availableColors?: string[];
+  // Image number per color: `${sku}-N-product.webp` / `${sku}-N-cart.webp`.
+  colorImages?: Record<string, number>;
 }
 
 export interface ICartProduct extends IProduct {

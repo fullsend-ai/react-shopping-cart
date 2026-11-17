@@ -105,6 +105,7 @@ describe('[contexts] - products-context', () => {
           },
           {
             availableColors: ['Black', 'White'],
+            colorImages: { Black: 1, White: 2 },
             availableSizes: [],
             currencyFormat: '$',
             currencyId: 'USD',

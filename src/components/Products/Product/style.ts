@@ -77,9 +77,15 @@ export const Image = styled.div<IImage>``;
 
 interface IContainer {
   $sku: number | string;
+  $frontImage: number;
+  $hoverImage: number;
 }
 export const Container = styled.div<IContainer>`
   position: relative;
+  /* A column, so the price and button sit at the bottom and line up across
+     a grid row whatever the title length or color picker above them. */
+  display: flex;
+  flex-direction: column;
   text-align: center;
   box-sizing: border-box;
   padding: 10px;
@@ -95,8 +101,8 @@ export const Container = styled.div<IContainer>`
     width: 100%;
     height: 270px;
     position: relative;
-    background-image: ${({ $sku }) =>
-      `url(${require(`static/products/${$sku}-1-product.webp`)})`};
+    background-image: ${({ $sku, $frontImage }) =>
+      `url(${require(`static/products/${$sku}-${$frontImage}-product.webp`)})`};
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
@@ -119,8 +125,8 @@ export const Container = styled.div<IContainer>`
 
   &:hover {
     ${Image} {
-      background-image: ${({ $sku }) =>
-        `url(${require(`static/products/${$sku}-2-product.webp`)})`};
+      background-image: ${({ $sku, $hoverImage }) =>
+        `url(${require(`static/products/${$sku}-${$hoverImage}-product.webp`)})`};
     }
 
     ${BuyButton}:not(:disabled) {
@@ -143,8 +149,10 @@ export const Stopper = styled.div`
 
 export const Title = styled.p`
   position: relative;
-  padding: 0 20px;
-  height: 45px;
+  /* Grows with the title, and the bottom padding keeps the divider below
+     the last line. Two lines plus the padding give the former 45px. */
+  padding: 0 20px 8px;
+  min-height: 37px;
 
   &::before {
     content: '';
@@ -160,6 +168,7 @@ export const Title = styled.p`
 
 export const Price = styled.div`
   height: 60px;
+  margin-top: auto;
 
   .val {
     b {

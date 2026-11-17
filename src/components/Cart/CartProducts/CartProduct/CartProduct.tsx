@@ -1,4 +1,5 @@
 import formatPrice from 'utils/formatPrice';
+import colorImage from 'utils/colorImage';
 import { ICartProduct } from 'models';
 
 import { useCart } from 'contexts/cart-context';
@@ -29,6 +30,8 @@ const CartProduct = ({ product }: IProps) => {
   // One product can have several lines (one per color), so the buttons name
   // the line they change.
   const lineName = color ? `${color} ${title}` : title;
+  // The thumbnail follows the line's color; otherwise it is image 1.
+  const image = colorImage(product, color) ?? 1;
 
   const handleRemoveProduct = () => removeProduct(product);
   const handleIncreaseProductQuantity = () => increaseProductQuantity(product);
@@ -42,7 +45,7 @@ const CartProduct = ({ product }: IProps) => {
         aria-label={`Remove ${lineName} from cart`}
       />
       <S.Image
-        src={require(`static/products/${sku}-1-cart.webp`)}
+        src={require(`static/products/${sku}-${image}-cart.webp`)}
         alt={title}
       />
       <S.Details>

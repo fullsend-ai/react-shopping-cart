@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { screen } from '@testing-library/react';
+import { queryByAttribute, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithThemeProvider } from 'utils/test/test-utils';
 import matchesBrand from 'utils/matchesBrand';
@@ -350,6 +350,7 @@ describe('[components] - Product', () => {
           '21 oz insulated stainless steel water bottle, Standard Mouth, Red Hat logo print',
         availableSizes: [],
         availableColors: ['Black', 'White'],
+        colorImages: { Black: 1, White: 2 },
         style: '',
         price: 34.95,
         installments: 0,
@@ -384,6 +385,15 @@ describe('[components] - Product', () => {
         require(`static/products/${sku}-2-product.webp`)
       ).not.toThrow();
       expect(() => require(`static/products/${sku}-1-cart.webp`)).not.toThrow();
+      expect(() => require(`static/products/${sku}-2-cart.webp`)).not.toThrow();
+    });
+
+    test('should have a different cart image for each color', async () => {
+      const { sku } = await getBottle();
+
+      expect(checksum(`${sku}-2-cart.webp`)).not.toBe(
+        checksum(`${sku}-1-cart.webp`)
+      );
     });
 
     test('should not reuse the front image as the hover image', async () => {
@@ -403,6 +413,10 @@ describe('[components] - Product', () => {
           dimensions(`${existingSku}-${suffix}.webp`)
         );
       });
+      // Apparel has no second cart image, so compare with its first one.
+      expect(dimensions(`${sku}-2-cart.webp`)).toEqual(
+        dimensions(`${existingSku}-1-cart.webp`)
+      );
     });
 
     test('should render with its price and free shipping', async () => {
@@ -541,6 +555,69 @@ describe('[components] - Product', () => {
       );
       expect(cartLineTexts()).toEqual(['White Quantity: 1']);
       expect(screen.getByText('1')).toBeInTheDocument();
+    });
+
+    describe('images follow the chosen color', () => {
+      // The card image is a styled div with an alt attribute: read its
+      // resolved background image. Call it before anything is in the cart,
+      // whose thumbnail has the same alt text.
+      const cardImage = (productTitle: string) =>
+        window.getComputedStyle(
+          queryByAttribute('alt', document.body, productTitle) as HTMLElement
+        ).backgroundImage;
+      const cartImages = () =>
+        screen
+          .queryAllByRole('img')
+          .map((img) => img.getAttribute('src'))
+          .filter(Boolean);
+
+      test('should show the chosen color on the card', async () => {
+        const { sku } = await getBottle();
+        setupWithCart(await getBottle());
+
+        expect(cardImage(title)).toContain(`${sku}-1-product.webp`);
+
+        await userEvent.click(screen.getByRole('radio', { name: 'White' }));
+        expect(cardImage(title)).toContain(`${sku}-2-product.webp`);
+
+        await userEvent.click(screen.getByRole('radio', { name: 'Black' }));
+        expect(cardImage(title)).toContain(`${sku}-1-product.webp`);
+      });
+
+      test('should show the color of each cart line', async () => {
+        const { sku } = await getBottle();
+        setupWithCart(await getBottle());
+        const addButton = screen.getByRole('button', { name: 'Add to cart' });
+
+        await userEvent.click(screen.getByRole('radio', { name: 'White' }));
+        await userEvent.click(addButton);
+        expect(cartImages()).toEqual([`${sku}-2-cart.webp`]);
+
+        await userEvent.click(screen.getByRole('radio', { name: 'Black' }));
+        await userEvent.click(addButton);
+        expect(cartLineTexts()).toEqual([
+          'White Quantity: 1',
+          'Black Quantity: 1',
+        ]);
+        expect(cartImages()).toEqual([
+          `${sku}-2-cart.webp`,
+          `${sku}-1-cart.webp`,
+        ]);
+      });
+
+      test('should leave apparel images unchanged', async () => {
+        const apparel = await getApparel();
+        setupWithCart(apparel);
+
+        expect(cardImage(apparel.title)).toContain(
+          `${apparel.sku}-1-product.webp`
+        );
+
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Add to cart' })
+        );
+        expect(cartImages()).toEqual([`${apparel.sku}-1-cart.webp`]);
+      });
     });
 
     test('should leave apparel without a color picker and add it at once', async () => {

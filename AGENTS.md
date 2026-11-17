@@ -1,5 +1,11 @@
 # Agent instructions
 
+## Architecture context
+
+- `docs/architecture/` describes the app for the planning agents (start at
+  `docs/architecture/ARCHITECTURE.md`). When a change alters anything
+  described there, update it in the same PR.
+
 ## Dependency updates
 
 ### TypeScript is held at 4.9

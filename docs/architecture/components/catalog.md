@@ -48,8 +48,10 @@ The schema has no fields for stock, order limits, categories, brand, colour or
 a product page URL. Adding one is a model change (`IProduct`, the test mocks,
 and every product entry), not a data change.
 
-New store products so far have used `isFreeShipping: true` and
-`installments: 0`.
+`isFreeShipping` and `installments` have no fixed default: take them from the
+story. The TSTAPP products so far (TSTAPP-2, TSTAPP-3) used
+`isFreeShipping: true` and `installments: 0`; the earlier Red Hat AI Black
+T-Shirt (#21) uses `installments: 9`.
 
 ## Id and SKU rules
 

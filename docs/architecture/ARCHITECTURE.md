@@ -9,13 +9,15 @@ work is written or coded (feature requests are reviewed for feasibility against
 it, and implementation plans are written from it). Start here, then read
 [`constraints.md`](constraints.md) for what the store does **not** do.
 
-| Document                                         | What it covers                                           |
-| ------------------------------------------------ | -------------------------------------------------------- |
-| [`constraints.md`](constraints.md)               | Hard limits. Ideas that break one are out of scope.      |
-| [`components/catalog.md`](components/catalog.md) | `products.json` schema, id and SKU rules, product images |
-| [`components/filter.md`](components/filter.md)   | Size and brand filters and how they combine              |
-| [`components/cart.md`](components/cart.md)       | Cart line, subtotal, free shipping, installments         |
-| [`decisions/`](decisions/)                       | Business rules settled in Jira (TSTAPP)                  |
+| Document                                           | What it covers                                                                           |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [`constraints.md`](constraints.md)                 | Hard limits. Ideas that break one are out of scope.                                      |
+| [`components/catalog.md`](components/catalog.md)   | `products.json` schema, id and SKU rules, product images                                 |
+| [`components/filter.md`](components/filter.md)     | Size and brand filters and how they combine                                              |
+| [`components/cart.md`](components/cart.md)         | Cart line, subtotal, free shipping, installments                                         |
+| [`components/ui-shell.md`](components/ui-shell.md) | Page layout, header, loader, theme, shared checkbox, what to reuse                       |
+| [`delivery.md`](delivery.md)                       | Jira → agents → PR → merge, workflows, auto-merge rules, hosting (not deployed on merge) |
+| [`decisions/`](decisions/)                         | Business rules settled in Jira (TSTAPP)                                                  |
 
 ## Stack
 
@@ -79,4 +81,5 @@ CI=true npm test
 ```
 
 Agent PRs are merged automatically after a clean review only when every changed
-path is in the allowlist in `.github/workflows/auto-merge.yml`.
+path is in the allowlist in `.github/workflows/auto-merge.yml`. A merge does not
+deploy the site. See [`delivery.md`](delivery.md).

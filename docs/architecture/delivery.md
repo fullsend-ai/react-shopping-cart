@@ -94,8 +94,8 @@ only when **all** of these hold:
    `AGENTS.md`, `CLAUDE.md` or `GEMINI.md` (or their `.local.md` variants), at any depth.
 
 Anything else needs a person to merge it. **`docs/` is not on the allowlist**,
-so a PR that updates `docs/architecture/`, as `AGENTS.md` asks, is not merged
-automatically today. Widening the allowlist needs an authorizing GitHub issue
+so a PR that updates `docs/architecture/` is not merged automatically
+today. Widening the allowlist needs an authorizing GitHub issue
 cited in the workflow header (issue #11 and issue #98 are the precedents).
 
 The merge runs as `github-actions[bot]` with the workflow's `GITHUB_TOKEN`.

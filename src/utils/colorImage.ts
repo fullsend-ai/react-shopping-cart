@@ -4,7 +4,7 @@ import { IProduct } from 'models';
 // for the chosen color, taken from the product's `colorImages`. Returns
 // undefined when no color is chosen or the product has no mapping, so callers
 // keep their default images.
-const colorImage = (
+export const colorImage = (
   product: Pick<IProduct, 'colorImages'>,
   color?: string
 ): number | undefined => (color ? product.colorImages?.[color] : undefined);
@@ -21,5 +21,3 @@ export const cardImages = (
 
   return { front: chosen ?? 1, hover: chosen ?? 2 };
 };
-
-export default colorImage;

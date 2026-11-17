@@ -1,4 +1,4 @@
-import colorImage, { cardImages } from '../colorImage';
+import { cardImages, colorImage } from '../colorImage';
 
 describe('[utils] - colorImage', () => {
   const bottle = { colorImages: { Black: 1, White: 2 } };

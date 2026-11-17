@@ -1,7 +1,11 @@
 import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { queryByAttribute, screen } from '@testing-library/react';
+import {
+  queryAllByAttribute,
+  queryByAttribute,
+  screen,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithThemeProvider } from 'utils/test/test-utils';
 import matchesBrand from 'utils/matchesBrand';
@@ -10,6 +14,7 @@ import { mockCartProducts } from 'utils/test/mocks';
 import { getProducts } from 'services/products';
 import { availableSizes } from 'components/Filter/Filter';
 import Cart from 'components/Cart';
+import Products from 'components/Products';
 import { IProduct } from 'models';
 
 import Product from '.';
@@ -519,31 +524,61 @@ describe('[components] - Product', () => {
       expect(screen.getByRole('radio', { name: 'White' })).toBeChecked();
     });
 
-    test('should add the chosen color from the keyboard', async () => {
-      setupWithCart(await getBottle());
-      const status = screen.getByRole('status');
+    test('should add the chosen color from the keyboard in the page tab order', async () => {
+      const products = await getProducts();
+      const bottle = await getBottle();
+      // The bottle among other cards, rendered by the real Products grid with
+      // the cart after it: every card has tabIndex 1, the cart's controls 0.
+      renderWithThemeProvider(
+        <CartProvider>
+          <Products
+            products={[
+              products[0],
+              products[1],
+              bottle,
+              products[2],
+              products[3],
+            ]}
+          />
+          <Cart />
+        </CartProvider>
+      );
+      // The cards in DOM order (the bottle's radios also have tabIndex 1).
+      const cards = queryAllByAttribute('tabindex', document.body, '1').filter(
+        (element) => element.tagName !== 'INPUT'
+      );
+      expect(cards).toHaveLength(5);
+      const bottleCard = cards[2];
+      expect(bottleCard).toHaveTextContent(title);
       const black = screen.getByRole('radio', { name: 'Black' });
+      const status = screen.getByRole('status');
 
       expect(status).toHaveTextContent('');
 
-      // Isolated-component check: with the card rendered alone, it is the
-      // first tab stop and its color radios come next. In the full app every
-      // card has tabIndex 1, so the browser visits all cards before any
-      // radio; this test does not cover that page-level focus order.
+      // Tab through the cards before the bottle's: two apparel cards, then
+      // the bottle card, then its color radios.
       await userEvent.tab();
+      await userEvent.tab();
+      expect(bottleCard).not.toHaveFocus();
+      await userEvent.tab();
+      expect(bottleCard).toHaveFocus();
       await userEvent.tab();
       expect(black).toHaveFocus();
       await userEvent.keyboard(' ');
       expect(black).toBeChecked();
       expect(status).toHaveTextContent('Black chosen. You can add to cart.');
 
-      // Focus the card again (Shift+Tab here), which adds the chosen color
-      // on Enter.
+      // Shift+Tab goes back to the bottle card, where Enter adds the color.
       await userEvent.tab({ shift: true });
-      expect(black).not.toHaveFocus();
+      expect(bottleCard).toHaveFocus();
       await userEvent.keyboard('{Enter}');
 
       expect(cartLineTexts()).toEqual(['Black Quantity: 1']);
+
+      // Tab from the radios goes on to the next card, not to the cart.
+      black.focus();
+      await userEvent.tab();
+      expect(cards[3]).toHaveFocus();
     });
 
     test('should merge the same color and split different colors', async () => {

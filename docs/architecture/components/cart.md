@@ -47,6 +47,9 @@ first product with colors).
   visible "Choose a color" hint, and Enter or Space on the card adds nothing.
 - The radios keep their native keys (arrows move, Space selects). Their key
   events do not reach the card, so choosing a color never adds to the cart.
+- The radios have the card's `tabIndex` (1), so Tab reaches them right after
+  their own card and Shift+Tab returns to it; Enter there adds the chosen
+  color.
 - A visually hidden polite status announces the chosen color and that
   adding is now possible.
 - The choice is card state. It stays chosen after adding and resets only when

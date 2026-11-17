@@ -1,5 +1,5 @@
 import formatPrice from 'utils/formatPrice';
-import colorImage from 'utils/colorImage';
+import { colorImage } from 'utils/colorImage';
 import { ICartProduct } from 'models';
 
 import { useCart } from 'contexts/cart-context';

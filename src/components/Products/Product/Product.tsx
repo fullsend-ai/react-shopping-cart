@@ -92,6 +92,10 @@ const Product = ({ product }: IProps) => {
             <S.ColorOption key={option}>
               <input
                 type="radio"
+                // Same tabIndex as the card, so the browser visits the radios
+                // right after their own card (DOM order) rather than after
+                // every card on the page: Shift+Tab goes back to this card.
+                tabIndex={1}
                 name={`product-${id}-color`}
                 value={option}
                 checked={color === option}

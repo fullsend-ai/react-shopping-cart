@@ -14,7 +14,7 @@ Every entry has all eleven fields (`IProduct` in
 | Field            | Type     | Rule                                                                                                                                                        |
 | ---------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | number   | Sequential. The next product takes the next free integer. Unique.                                                                                           |
-| `sku`            | number   | Unique product code. It also names the image files. See [SKU rules](#sku-rules).                                                                            |
+| `sku`            | number   | Unique product code. It also names the image files. See [id and SKU rules](#id-and-sku-rules).                                                                            |
 | `title`          | string   | Product name shown on the card and in the cart.                                                                                                             |
 | `description`    | string   | Short copy (fabric, weight, decoration). Not shown on the card, but the brand filter reads it.                                                              |
 | `availableSizes` | string[] | Sizes from the [filter vocabulary](filter.md#size-vocabulary). May be `[]` for products with no size ([decision 0004](../decisions/0004-size-optional.md)). |

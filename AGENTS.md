@@ -121,7 +121,10 @@ Products live in `src/static/json/products.json`, images in
    If the issue gives another currency, convert with the rate the issue
    states. If it states none, ask on the issue rather than picking a rate.
 5. **Tests to update.** The hard-coded counts in
-   `src/components/Filter/Filter.test.tsx`, the brand title lists in
+   `src/components/Filter/Filter.test.tsx`, the brand and size-filter
+   (`M`) title/object lists in
    `src/contexts/products-context/__tests__/useProducts.test.tsx`, and a
    per-product `describe` block in
-   `src/components/Products/Product/Product.test.tsx`.
+   `src/components/Products/Product/Product.test.tsx`. These tests read
+   the live catalog, so recheck every expectation computed from it, not
+   only the brand lists.

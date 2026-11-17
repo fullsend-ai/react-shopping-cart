@@ -52,8 +52,8 @@ New store products so far have used `isFreeShipping: true` and
 
 ## Id and SKU rules
 
-- **`id`** is a small sequential integer (0 to 18 today). A new product takes
-  the next free id. Several open stories may "reserve" the same id, so check
+- **`id`** is a small sequential integer, from 0 up to the highest id in
+  `products.json`. A new product takes the next free id. Several open stories may "reserve" the same id, so check
   the file again when implementing. The change that merges second takes the
   next free id.
 - **`sku`** must be unique. A **new** SKU must be a 16-digit integer at most
@@ -62,8 +62,8 @@ New store products so far have used `isFreeShipping: true` and
   would not match the file. The test should check that the SKU is a safe
   integer (`Number.isSafeInteger`), not just its digit count: a 16-digit
   number can still be over the limit.
-- **Existing SKUs** are 15 to 17 digits, and 12 of the 19 are above the
-  safe-integer limit. Their images resolve today only because JavaScript
+- **Existing SKUs** are 15 to 17 digits, and many of the older ones are above
+  the safe-integer limit. Their images resolve today only because JavaScript
   prints the shortest string that round-trips: some of them (for example
   `51498472915966370`) are stored as a different double. That is not a safe
   basis for new SKUs. Do not renumber or "fix" them: the

@@ -39,8 +39,8 @@ the title or the description** ([`src/utils/matchesBrand.ts`](../../../src/utils
 match cannot span both.
 
 To put a product under the Red Hat filter, write "Red Hat" into its
-description (for example "Red Hat logo embroidery"). TSTAPP-2 and TSTAPP-4
-did this. A new brand is a new entry in `availableBrands`.
+description (for example "Red Hat logo embroidery"). TSTAPP-2 ("Red Hat logo
+embroidery") and TSTAPP-3 ("Red Hat logo print") did this. A new brand is a new entry in `availableBrands`.
 
 ## How the filters combine
 

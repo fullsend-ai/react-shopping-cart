@@ -25,7 +25,8 @@ it, and implementation plans are written from it). Start here, then read
   and `styled-components` 6. TypeScript cannot move to 5.x while CRA stays;
   see [`AGENTS.md`](../../AGENTS.md).
 - **Firebase Hosting** serves the `build/` folder as static files, with a
-  catch-all rewrite to `index.html` and a strict Content-Security-Policy
+  catch-all rewrite to `index.html` and a Content-Security-Policy (inline scripts and styles allowed; see
+  [constraints](constraints.md))
   ([`firebase.json`](../../firebase.json)). Google Analytics (gtag) is the only
   third-party script.
 - Node.js 22.22.1 or later (`.nvmrc`: 24).

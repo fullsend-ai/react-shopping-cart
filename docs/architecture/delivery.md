@@ -121,7 +121,9 @@ different token or the deploy listened for another event.
 
 `./rebuild.sh` is the way to show `main` running. It runs `git pull
 --ff-only`, builds the image with **podman** as `localhost/demo-shop:latest`,
-runs `CI=true npm test` in a throwaway container, replaces the `demo-shop`
+runs `npm test -- --watchAll=false` in a throwaway container (the
+`CI=true` before `podman run` stays on the host, so Jest's CI mode is off
+there and a missing snapshot is written instead of failing), replaces the `demo-shop`
 container on **http://localhost:8091**, and then waits for the bundle and
 fails if webpack logged "Failed to compile". It has no type check or
 production build, so it can pass on code that `npm run build` would reject.

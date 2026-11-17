@@ -19,7 +19,9 @@ have no size.
 - **Filtering:** with no size selected, a product with no sizes is listed.
   With any size selected, it is excluded
   ([filter](../components/filter.md#how-the-filters-combine)). This is the
-  intended behaviour and is covered by tests.
+  intended behaviour. `matchesSizes` (`useProducts.tsx`) implements it, but
+  no test covers it yet: no mock or catalog product has `availableSizes: []`.
+  The first story that adds a size-less product should add that test.
 - **Cart line:** must show only the `style` (for example `RHNLOD-044`), not
   `"{first size} | {style}"`, and must never print `undefined`
   ([cart](../components/cart.md#cart-line)). **Not implemented yet:** the

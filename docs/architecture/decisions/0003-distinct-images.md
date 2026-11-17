@@ -28,5 +28,7 @@ makes the hover do nothing.
 
 - A new product's test compares the checksums of `-1-product` and
   `-2-product` (see the Craghoppers block in `Product.test.tsx`).
-- The images ship in the same PR as the catalog entry. A missing one blanks
-  the store at runtime.
+- The images must be on the branch no later than the catalog entry: already
+  on `main`, or in the same PR (see
+  [catalog images](../components/catalog.md#product-images)). A missing one
+  blanks the store at runtime.

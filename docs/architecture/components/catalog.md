@@ -52,7 +52,7 @@ New store products so far have used `isFreeShipping: true` and
 
 ## Id and SKU rules
 
-- **`id`** is a small sequential integer (0 to 17 today). A new product takes
+- **`id`** is a small sequential integer (0 to 18 today). A new product takes
   the next free id. Several open stories may "reserve" the same id, so check
   the file again when implementing. The change that merges second takes the
   next free id.
@@ -62,7 +62,7 @@ New store products so far have used `isFreeShipping: true` and
   would not match the file. The test should check that the SKU is a safe
   integer (`Number.isSafeInteger`), not just its digit count: a 16-digit
   number can still be over the limit.
-- **Existing SKUs** are 15 to 17 digits, and 12 of the 18 are above the
+- **Existing SKUs** are 15 to 17 digits, and 12 of the 19 are above the
   safe-integer limit. They happen to be exactly representable, so they parse
   unchanged and their images resolve. Do not renumber or "fix" them: the
   image files are named after them. Do not copy them as a pattern for new

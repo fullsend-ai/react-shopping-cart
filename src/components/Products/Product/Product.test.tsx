@@ -51,6 +51,32 @@ describe('[components] - Product', () => {
     expect(screen.getByText('Free shipping')).toBeInTheDocument();
   });
 
+  // A color without a colorImages entry would fall back to images 1 and 2
+  // (contradicting the choice), and a mapped image number without files
+  // would throw during render. Check every color product in the catalog.
+  test('should map every color to an image number with product and cart files', async () => {
+    const products = await getProducts();
+    const colorProducts = products.filter(
+      ({ availableColors, colorImages }) => availableColors || colorImages
+    );
+
+    colorProducts.forEach(({ sku, availableColors = [], colorImages = {} }) => {
+      expect(availableColors.length).toBeGreaterThan(0);
+      expect(Object.keys(colorImages).sort()).toEqual(
+        [...availableColors].sort()
+      );
+
+      Object.values(colorImages).forEach((n) => {
+        expect(() =>
+          require(`static/products/${sku}-${n}-product.webp`)
+        ).not.toThrow();
+        expect(() =>
+          require(`static/products/${sku}-${n}-cart.webp`)
+        ).not.toThrow();
+      });
+    });
+  });
+
   describe('Red Hat AI Black T-Shirt', () => {
     const title = 'Red Hat AI Black T-Shirt';
 
@@ -432,14 +458,16 @@ describe('[components] - Product', () => {
       setupWithCart(await getBottle());
       const addButton = screen.getByRole('button', { name: 'Add to cart' });
 
-      expect(screen.getByRole('group', { name: 'Color' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('group', { name: 'Color' })
+      ).toHaveAccessibleDescription('Choose a color');
       expect(screen.getByRole('radio', { name: 'Black' })).not.toBeChecked();
       expect(screen.getByRole('radio', { name: 'White' })).not.toBeChecked();
       expect(addButton).toBeDisabled();
       expect(addButton).toHaveAccessibleDescription('Choose a color');
       expect(screen.getByText('Choose a color')).toBeVisible();
 
-      // The card is the first tab stop (tabIndex 1).
+      // In this isolated render the card is the first tab stop (tabIndex 1).
       await userEvent.tab();
       await userEvent.keyboard('{Enter}');
       await userEvent.keyboard(' ');
@@ -470,6 +498,9 @@ describe('[components] - Product', () => {
         '0'
       );
       expect(screen.queryByText('Choose a color')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('group', { name: 'Color' })
+      ).not.toHaveAccessibleDescription();
       expect(screen.getByRole('button', { name: 'Add to cart' })).toBeEnabled();
     });
 
@@ -495,7 +526,10 @@ describe('[components] - Product', () => {
 
       expect(status).toHaveTextContent('');
 
-      // The card is the first tab stop (tabIndex 1), then the color radios.
+      // Isolated-component check: with the card rendered alone, it is the
+      // first tab stop and its color radios come next. In the full app every
+      // card has tabIndex 1, so the browser visits all cards before any
+      // radio; this test does not cover that page-level focus order.
       await userEvent.tab();
       await userEvent.tab();
       expect(black).toHaveFocus();
@@ -503,7 +537,8 @@ describe('[components] - Product', () => {
       expect(black).toBeChecked();
       expect(status).toHaveTextContent('Black chosen. You can add to cart.');
 
-      // Back to the card, which adds the chosen color on Enter.
+      // Focus the card again (Shift+Tab here), which adds the chosen color
+      // on Enter.
       await userEvent.tab({ shift: true });
       expect(black).not.toHaveFocus();
       await userEvent.keyboard('{Enter}');

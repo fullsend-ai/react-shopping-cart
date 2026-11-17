@@ -150,8 +150,10 @@ export const Stopper = styled.div`
 export const Title = styled.p`
   position: relative;
   /* Grows with the title, and the bottom padding keeps the divider below
-     the last line. Two lines plus the padding give the former 45px. */
+     the last line. The explicit line-height makes two lines exactly 37px
+     whatever the font, so two lines plus the padding give the former 45px. */
   padding: 0 20px 8px;
+  line-height: 18.5px;
   min-height: 37px;
 
   &::before {

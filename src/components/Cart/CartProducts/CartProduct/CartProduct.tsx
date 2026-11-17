@@ -41,7 +41,7 @@ const CartProduct = ({ product }: IProps) => {
     <S.Container>
       <S.DeleteButton
         onClick={handleRemoveProduct}
-        title="remove product from cart"
+        title={`Remove ${lineName} from cart`}
         aria-label={`Remove ${lineName} from cart`}
       />
       <S.Image

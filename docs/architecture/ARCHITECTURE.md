@@ -60,14 +60,14 @@ src/index.tsx
 
 ## Where to change things
 
-| To change...            | Edit                                                                                                             |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Add or edit a product   | `src/static/json/products.json` + 3 images in `src/static/products/`                                             |
-| Product data shape      | `src/models/index.ts` (`IProduct`)                                                                               |
-| Filter options or logic | `src/components/Filter/Filter.tsx`, `src/contexts/products-context/useProducts.tsx`, `src/utils/matchesBrand.ts` |
-| Product card            | `src/components/Products/Product/`                                                                               |
-| Cart line, subtotal     | `src/components/Cart/`, `src/contexts/cart-context/`                                                             |
-| Price formatting        | `src/utils/formatPrice.ts`                                                                                       |
+| To change...            | Edit                                                                                                                                                                                                                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Add or edit a product   | `src/static/json/products.json` + 3 images in `src/static/products/`. A product with `colorImages` also needs `{sku}-N-product.webp` and `{sku}-N-cart.webp` for every image number N it maps. See [product images](components/catalog.md#product-images). |
+| Product data shape      | `src/models/index.ts` (`IProduct`)                                                                                                                                                                                                                         |
+| Filter options or logic | `src/components/Filter/Filter.tsx`, `src/contexts/products-context/useProducts.tsx`, `src/utils/matchesBrand.ts`                                                                                                                                           |
+| Product card            | `src/components/Products/Product/`                                                                                                                                                                                                                         |
+| Cart line, subtotal     | `src/components/Cart/`, `src/contexts/cart-context/`                                                                                                                                                                                                       |
+| Price formatting        | `src/utils/formatPrice.ts`                                                                                                                                                                                                                                 |
 
 ## Validation
 

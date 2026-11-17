@@ -1,7 +1,7 @@
 import { KeyboardEvent, useState } from 'react';
 
 import formatPrice from 'utils/formatPrice';
-import colorImage from 'utils/colorImage';
+import { cardImages } from 'utils/colorImage';
 import { IProduct } from 'models';
 
 import { useCart } from 'contexts/cart-context';
@@ -30,12 +30,7 @@ const Product = ({ product }: IProps) => {
   const hasColors = !!availableColors?.length;
   const needsColor = hasColors && !color;
   const colorHintId = `product-${id}-color-hint`;
-  // Once a color is chosen, the front and hover images both show it. Before
-  // that (and for products without colorImages) the card keeps image 1 on
-  // the front and image 2 on hover.
-  const chosenImage = colorImage(product, color);
-  const frontImage = chosenImage ?? 1;
-  const hoverImage = chosenImage ?? 2;
+  const { front: frontImage, hover: hoverImage } = cardImages(product, color);
 
   const formattedPrice = formatPrice(price, currencyId);
   let productInstallment;
@@ -88,7 +83,10 @@ const Product = ({ product }: IProps) => {
       <S.Image alt={title} />
       <S.Title>{title}</S.Title>
       {hasColors && (
-        <S.ColorPicker onKeyUp={handleColorPickerKeyUp}>
+        <S.ColorPicker
+          onKeyUp={handleColorPickerKeyUp}
+          aria-describedby={needsColor ? colorHintId : undefined}
+        >
           <legend>Color</legend>
           {availableColors?.map((option) => (
             <S.ColorOption key={option}>

@@ -9,6 +9,7 @@ Object {
         class="sc-bdnzMm hUurVR"
       >
         <button
+          aria-label="Remove Cropped Stay Groovy off white from cart"
           class="sc-jSFiLV hNjazs"
           title="remove product from cart"
         />
@@ -43,12 +44,14 @@ Object {
           </p>
           <div>
             <button
+              aria-label="Decrease Cropped Stay Groovy off white quantity"
               class="sc-gKzZKs buzwOr"
               disabled=""
             >
               -
             </button>
             <button
+              aria-label="Increase Cropped Stay Groovy off white quantity"
               class="sc-gKzZKs buzwOr"
             >
               +
@@ -63,6 +66,7 @@ Object {
       class="sc-bdnzMm hUurVR"
     >
       <button
+        aria-label="Remove Cropped Stay Groovy off white from cart"
         class="sc-jSFiLV hNjazs"
         title="remove product from cart"
       />
@@ -97,12 +101,14 @@ Object {
         </p>
         <div>
           <button
+            aria-label="Decrease Cropped Stay Groovy off white quantity"
             class="sc-gKzZKs buzwOr"
             disabled=""
           >
             -
           </button>
           <button
+            aria-label="Increase Cropped Stay Groovy off white quantity"
             class="sc-gKzZKs buzwOr"
           >
             +

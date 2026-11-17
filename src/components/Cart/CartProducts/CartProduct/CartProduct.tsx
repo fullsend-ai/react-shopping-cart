@@ -26,6 +26,9 @@ const CartProduct = ({ product }: IProps) => {
   // Size-less products have no first size and may have no style, so join
   // only the parts that are present (never print "undefined").
   const desc = [availableSizes[0], color, style].filter(Boolean).join(' | ');
+  // One product can have several lines (one per color), so the buttons name
+  // the line they change.
+  const lineName = color ? `${color} ${title}` : title;
 
   const handleRemoveProduct = () => removeProduct(product);
   const handleIncreaseProductQuantity = () => increaseProductQuantity(product);
@@ -36,6 +39,7 @@ const CartProduct = ({ product }: IProps) => {
       <S.DeleteButton
         onClick={handleRemoveProduct}
         title="remove product from cart"
+        aria-label={`Remove ${lineName} from cart`}
       />
       <S.Image
         src={require(`static/products/${sku}-1-cart.webp`)}
@@ -54,10 +58,14 @@ const CartProduct = ({ product }: IProps) => {
           <S.ChangeQuantity
             onClick={handleDecreaseProductQuantity}
             disabled={quantity === 1 ? true : false}
+            aria-label={`Decrease ${lineName} quantity`}
           >
             -
           </S.ChangeQuantity>
-          <S.ChangeQuantity onClick={handleIncreaseProductQuantity}>
+          <S.ChangeQuantity
+            onClick={handleIncreaseProductQuantity}
+            aria-label={`Increase ${lineName} quantity`}
+          >
             +
           </S.ChangeQuantity>
         </div>

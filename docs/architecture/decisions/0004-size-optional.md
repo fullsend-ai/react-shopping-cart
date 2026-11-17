@@ -24,9 +24,10 @@ have no size.
   a size was selected. `matchesSizes` (`useProducts.tsx`) implements it, and
   the size-filter tests in `useProducts.test.tsx` and `Filter.test.tsx`
   cover it.
-- **Cart line:** shows only the parts that are present, so no size for a
-  size-less product: just the `style` (for example `RHNLOD-044`), or the
-  chosen color when the style is empty. It never prints `undefined`
+- **Cart line:** shows only the parts that are present, so never a size for
+  a size-less product: the chosen color and the `style` that are present,
+  joined with `" | "` (for example `RHNLOD-044`, `Black`, or
+  `Black | RHNLOD-044`). It never prints `undefined`
   ([cart](../components/cart.md#cart-line)). Implemented by TSTAPP-6.
 - **Product card:** unaffected. It does not show sizes.
 - Any new UI that reads `availableSizes` must handle `[]`.

@@ -110,7 +110,7 @@ describe('[contexts] - products-context', () => {
             currencyId: 'USD',
             description:
               '21 oz insulated stainless steel water bottle, Standard Mouth, Red Hat logo print',
-            id: 21,
+            id: 19,
             installments: 0,
             isFreeShipping: true,
             price: 34.95,

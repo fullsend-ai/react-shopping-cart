@@ -343,7 +343,7 @@ describe('[components] - Product', () => {
 
       expect(matches).toHaveLength(1);
       expect(matches[0]).toEqual({
-        id: 21,
+        id: 19,
         sku: 2121000000000001,
         title,
         description:
@@ -474,6 +474,29 @@ describe('[components] - Product', () => {
       expect(screen.getByRole('radio', { name: 'White' })).toBeChecked();
     });
 
+    test('should add the chosen color from the keyboard', async () => {
+      setupWithCart(await getBottle());
+      const status = screen.getByRole('status');
+      const black = screen.getByRole('radio', { name: 'Black' });
+
+      expect(status).toHaveTextContent('');
+
+      // The card is the first tab stop (tabIndex 1), then the color radios.
+      await userEvent.tab();
+      await userEvent.tab();
+      expect(black).toHaveFocus();
+      await userEvent.keyboard(' ');
+      expect(black).toBeChecked();
+      expect(status).toHaveTextContent('Black chosen. You can add to cart.');
+
+      // Back to the card, which adds the chosen color on Enter.
+      await userEvent.tab({ shift: true });
+      expect(black).not.toHaveFocus();
+      await userEvent.keyboard('{Enter}');
+
+      expect(cartLineTexts()).toEqual(['Black Quantity: 1']);
+    });
+
     test('should merge the same color and split different colors', async () => {
       setupWithCart(await getBottle());
       const addButton = screen.getByRole('button', { name: 'Add to cart' });
@@ -493,20 +516,28 @@ describe('[components] - Product', () => {
       expect(screen.getByText('$ 104.85')).toBeInTheDocument();
 
       // Cart lines are in the order they were added: Black, then White.
-      await userEvent.click(screen.getAllByRole('button', { name: '+' })[0]);
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: `Increase Black ${title} quantity`,
+        })
+      );
       expect(cartLineTexts()).toEqual([
         'Black Quantity: 2',
         'White Quantity: 2',
       ]);
 
-      await userEvent.click(screen.getAllByRole('button', { name: '-' })[1]);
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: `Decrease White ${title} quantity`,
+        })
+      );
       expect(cartLineTexts()).toEqual([
         'Black Quantity: 2',
         'White Quantity: 1',
       ]);
 
       await userEvent.click(
-        screen.getAllByTitle('remove product from cart')[0]
+        screen.getByRole('button', { name: `Remove Black ${title} from cart` })
       );
       expect(cartLineTexts()).toEqual(['White Quantity: 1']);
       expect(screen.getByText('1')).toBeInTheDocument();

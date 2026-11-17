@@ -66,7 +66,8 @@ const Product = ({ product }: IProps) => {
 
   // Keys pressed on the color radios (arrows, Space, Enter) choose a color
   // only: they must not reach the card, which adds to the cart on key up.
-  const stopColorKeys = (event: KeyboardEvent) => event.stopPropagation();
+  const handleColorPickerKeyUp = (event: KeyboardEvent) =>
+    event.stopPropagation();
 
   return (
     <S.Container onKeyUp={handleAddProductWhenEnter} $sku={sku} tabIndex={1}>
@@ -82,7 +83,7 @@ const Product = ({ product }: IProps) => {
         {productInstallment}
       </S.Price>
       {hasColors && (
-        <S.ColorPicker onKeyUp={stopColorKeys}>
+        <S.ColorPicker onKeyUp={handleColorPickerKeyUp}>
           <legend>Color</legend>
           {availableColors?.map((option) => (
             <S.ColorOption key={option}>
@@ -97,6 +98,13 @@ const Product = ({ product }: IProps) => {
             </S.ColorOption>
           ))}
         </S.ColorPicker>
+      )}
+      {hasColors && (
+        // Announces the choice: "Add to cart" becomes enabled and the hint
+        // goes away, which a screen reader on the radio would not notice.
+        <S.ColorStatus role="status" aria-live="polite">
+          {color ? `${color} chosen. You can add to cart.` : ''}
+        </S.ColorStatus>
       )}
       {needsColor && <S.ColorHint id={colorHintId}>Choose a color</S.ColorHint>}
       <S.BuyButton

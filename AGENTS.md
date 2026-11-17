@@ -1,13 +1,5 @@
 # Agent instructions
 
-## Architecture context
-
-- `docs/architecture/` describes the app for the planning agents (start at
-  `docs/architecture/ARCHITECTURE.md`). When a change alters how the app
-  works as described there (a component, a rule, a constraint, a decision),
-  update it in the same PR. Adding a product with the existing rules is not
-  such a change, so a product-add PR leaves `docs/` alone and can auto-merge.
-
 ## Dependency updates
 
 ### TypeScript is held at 4.9

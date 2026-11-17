@@ -98,3 +98,30 @@ allowed, relax these together:
 - the `@types/jest` Dependabot ignore rule, but only when `react-scripts`
   (and its Jest 27 runtime) is replaced. It tracks the Jest version, not the
   TypeScript version, so keep it if only TypeScript is raised.
+
+## Adding a catalog product
+
+Products live in `src/static/json/products.json`, images in
+`src/static/products/`.
+
+1. **Brand filter.** `matchesBrand` (`src/utils/matchesBrand.ts`) matches
+   each name in `availableBrands` (`src/components/Filter/Filter.tsx`) as
+   whole words, case-insensitive, in `title` or `description` only. A
+   product of that brand (for Red Hat: store styles such as `RHNL-*`, or
+   items with a Red Hat logo) must contain the brand name there. If the
+   issue's description lacks it, append a short phrase such as
+   `, Red Hat logo print` (or `embroidery`) and say so in the PR body
+   (#101, #102).
+2. **id/sku.** Use the next sequential `id`. Make the `sku` a new, unique
+   16-digit number at or below `Number.MAX_SAFE_INTEGER`.
+3. **Images.** Add `{sku}-1-product.webp` and `{sku}-2-product.webp` at
+   276×400, and `{sku}-1-cart.webp` at 120×174. The hover image
+   (`-2-product`) must differ from the front image (`-1-product`).
+4. **Price.** Prices are USD (`currencyId` `"USD"`, `currencyFormat` `"$"`).
+   If the issue gives another currency, convert with the rate the issue
+   states. If it states none, ask on the issue rather than picking a rate.
+5. **Tests to update.** The hard-coded counts in
+   `src/components/Filter/Filter.test.tsx`, the brand title lists in
+   `src/contexts/products-context/__tests__/useProducts.test.tsx`, and a
+   per-product `describe` block in
+   `src/components/Products/Product/Product.test.tsx`.

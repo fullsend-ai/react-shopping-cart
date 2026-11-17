@@ -137,6 +137,7 @@ describe('[contexts] - products-context', () => {
         expect(products.map((p) => p.title)).toEqual([
           'Red Hat AI Black T-Shirt',
           'Craghoppers Grey Half Zip Fleece',
+          'Pullover Heather Grey Hoodie Unisex',
         ]);
         expect(brandFilters).toEqual(['Red Hat']);
       });
@@ -153,6 +154,7 @@ describe('[contexts] - products-context', () => {
         expect(products.map((p) => p.title)).toEqual([
           'Red Hat AI Black T-Shirt',
           'Craghoppers Grey Half Zip Fleece',
+          'Pullover Heather Grey Hoodie Unisex',
         ]);
         expect(filters).toEqual(['S']);
       });

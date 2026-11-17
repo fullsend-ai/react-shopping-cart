@@ -48,7 +48,7 @@ describe('[components] - Filter', () => {
     expect(screen.getByText('0 Product(s) found')).toBeInTheDocument();
 
     await userEvent.click(screen.getByLabelText('Red Hat'));
-    expect(await screen.findByText('2 Product(s) found')).toBeInTheDocument();
+    expect(await screen.findByText('3 Product(s) found')).toBeInTheDocument();
     expect(screen.getByLabelText('Red Hat')).toBeChecked();
 
     await userEvent.click(screen.getByLabelText('Red Hat'));
@@ -106,12 +106,12 @@ describe('[components] - Filter', () => {
         </ProductsProvider>
       );
 
-    test.each(['S', 'XL', 'XXL'])(
+    test.each(['S', 'XL', 'XXL', 'Red Hat'])(
       'should show the hoodie when filtering by %s',
-      async (size) => {
+      async (label) => {
         setupWithTitles();
 
-        await userEvent.click(screen.getByLabelText(size));
+        await userEvent.click(screen.getByLabelText(label));
         expect(await screen.findByText(title)).toBeInTheDocument();
       }
     );

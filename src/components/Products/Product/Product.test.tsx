@@ -209,7 +209,8 @@ describe('[components] - Product', () => {
       expect(matches[0]).toMatchObject({
         id: 18,
         style: 'RHNL-031',
-        description: '52% ring-spun cotton / 48% polyester, 220gsm',
+        description:
+          '52% ring-spun cotton / 48% polyester, 220gsm, Red Hat logo print',
         price: 35.92,
         currencyId: 'USD',
         currencyFormat: '$',
@@ -237,6 +238,13 @@ describe('[components] - Product', () => {
       product?.availableSizes.forEach((size) => {
         expect(availableSizes).toContain(size);
       });
+    });
+
+    test('should match the Red Hat brand filter', async () => {
+      const products = await getProducts();
+      const product = products.find((p) => p.title === title);
+
+      expect(product && matchesBrand(product, 'Red Hat')).toBe(true);
     });
 
     test('should have product and cart images', async () => {

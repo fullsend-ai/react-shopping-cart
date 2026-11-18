@@ -15,7 +15,7 @@ Every entry has all eleven fields (`IProduct` in
 | Field            | Type     | Rule                                                                                                                                                        |
 | ---------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | number   | Sequential. The next product takes the next free integer. Unique.                                                                                           |
-| `sku`            | number   | Unique product code. It also names the image files. See [id and SKU rules](#id-and-sku-rules).                                                                            |
+| `sku`            | number   | Unique product code. It also names the image files. See [id and SKU rules](#id-and-sku-rules).                                                              |
 | `title`          | string   | Product name shown on the card and in the cart.                                                                                                             |
 | `description`    | string   | Short copy (fabric, weight, decoration). Not shown on the card, but the brand filter reads it.                                                              |
 | `availableSizes` | string[] | Sizes from the [filter vocabulary](filter.md#size-vocabulary). May be `[]` for products with no size ([decision 0004](../decisions/0004-size-optional.md)). |
@@ -49,7 +49,7 @@ a product page URL. Adding one is a model change (`IProduct`, the test mocks,
 and every product entry), not a data change.
 
 `isFreeShipping` and `installments` have no fixed default: take them from the
-story. The TSTAPP products so far (TSTAPP-2, TSTAPP-3) used
+story. The TSTAPP products so far (TSTAPP-2, TSTAPP-3, TSTAPP-4) used
 `isFreeShipping: true` and `installments: 0`; the earlier Red Hat AI Black
 T-Shirt (#21) uses `installments: 9`.
 

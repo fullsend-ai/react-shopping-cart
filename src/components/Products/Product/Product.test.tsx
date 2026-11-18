@@ -282,4 +282,93 @@ describe('[components] - Product', () => {
       expect(screen.getByText('Free shipping')).toBeInTheDocument();
     });
   });
+
+  describe('Black & Red Contrast Hoodie', () => {
+    const title = 'Black & Red Contrast Hoodie';
+    const imagePath = (file: string) =>
+      path.resolve(__dirname, '../../../static/products', file);
+    const checksum = (file: string) =>
+      createHash('sha256').update(readFileSync(imagePath(file))).digest('hex');
+
+    test('should be in the catalog once with the requested details', async () => {
+      const products = await getProducts();
+      const matches = products.filter((p) => p.title === title);
+
+      expect(matches).toHaveLength(1);
+      expect(matches[0]).toMatchObject({
+        id: 19,
+        sku: 6212430000000001,
+        style: 'RHEU-621243',
+        description: 'Ringspun cotton, 280gsm, Red Hat logo on left chest',
+        price: 38.55,
+        currencyId: 'USD',
+        currencyFormat: '$',
+        isFreeShipping: true,
+        installments: 0,
+        availableSizes: ['S', 'L', 'XL', 'XXL'],
+      });
+    });
+
+    test('should have a unique id and a unique safe-integer sku', async () => {
+      const products = await getProducts();
+      const product = products.find((p) => p.title === title);
+
+      expect(Number.isSafeInteger(product?.sku)).toBe(true);
+      expect(products.filter(({ id }) => id === product?.id)).toHaveLength(1);
+      expect(products.filter(({ sku }) => sku === product?.sku)).toHaveLength(
+        1
+      );
+    });
+
+    test('should only use sizes from the filter vocabulary', async () => {
+      const products = await getProducts();
+      const product = products.find((p) => p.title === title);
+
+      product?.availableSizes.forEach((size) => {
+        expect(availableSizes).toContain(size);
+      });
+    });
+
+    test('should match the Red Hat brand filter', async () => {
+      const products = await getProducts();
+      const product = products.find((p) => p.title === title);
+
+      expect(product && matchesBrand(product, 'Red Hat')).toBe(true);
+    });
+
+    test('should have product and cart images', async () => {
+      const products = await getProducts();
+      const product = products.find((p) => p.title === title);
+      const sku = product?.sku;
+
+      expect(() =>
+        require(`static/products/${sku}-1-product.webp`)
+      ).not.toThrow();
+      expect(() =>
+        require(`static/products/${sku}-2-product.webp`)
+      ).not.toThrow();
+      expect(() => require(`static/products/${sku}-1-cart.webp`)).not.toThrow();
+    });
+
+    test('should not reuse the front image as the hover image', async () => {
+      const products = await getProducts();
+      const product = products.find((p) => p.title === title);
+      const sku = product?.sku;
+
+      expect(checksum(`${sku}-2-product.webp`)).not.toBe(
+        checksum(`${sku}-1-product.webp`)
+      );
+    });
+
+    test('should render with its price and free shipping', async () => {
+      const products = await getProducts();
+      const product = products.find((p) => p.title === title);
+
+      setup({ product });
+      expect(screen.getByText(title)).toBeInTheDocument();
+      expect(screen.getByText('38')).toBeInTheDocument();
+      expect(screen.getByText('.55')).toBeInTheDocument();
+      expect(screen.getByText('Free shipping')).toBeInTheDocument();
+    });
+  });
 });

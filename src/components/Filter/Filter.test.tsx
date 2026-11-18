@@ -48,11 +48,11 @@ describe('[components] - Filter', () => {
     expect(screen.getByText('0 Product(s) found')).toBeInTheDocument();
 
     await userEvent.click(screen.getByLabelText('Red Hat'));
-    expect(await screen.findByText('3 Product(s) found')).toBeInTheDocument();
+    expect(await screen.findByText('4 Product(s) found')).toBeInTheDocument();
     expect(screen.getByLabelText('Red Hat')).toBeChecked();
 
     await userEvent.click(screen.getByLabelText('Red Hat'));
-    expect(await screen.findByText('19 Product(s) found')).toBeInTheDocument();
+    expect(await screen.findByText('20 Product(s) found')).toBeInTheDocument();
     expect(screen.getByLabelText('Red Hat')).not.toBeChecked();
   });
 
@@ -117,6 +117,52 @@ describe('[components] - Filter', () => {
     );
 
     test.each(['XS', 'M', 'ML', 'L'])(
+      'should not show the hoodie when filtering by %s',
+      async (size) => {
+        setupWithTitles();
+
+        await userEvent.click(screen.getByLabelText(size));
+        expect(
+          await screen.findByText('Red Hat AI Black T-Shirt')
+        ).toBeInTheDocument();
+        expect(screen.queryByText(title)).not.toBeInTheDocument();
+      }
+    );
+  });
+
+  describe('Black & Red Contrast Hoodie', () => {
+    const title = 'Black & Red Contrast Hoodie';
+
+    const ProductTitles = () => {
+      const { products } = useProducts();
+      return (
+        <ul>
+          {products.map(({ id, title }) => (
+            <li key={id}>{title}</li>
+          ))}
+        </ul>
+      );
+    };
+
+    const setupWithTitles = () =>
+      renderWithThemeProvider(
+        <ProductsProvider>
+          <Filter />
+          <ProductTitles />
+        </ProductsProvider>
+      );
+
+    test.each(['S', 'L', 'XL', 'XXL', 'Red Hat'])(
+      'should show the hoodie when filtering by %s',
+      async (label) => {
+        setupWithTitles();
+
+        await userEvent.click(screen.getByLabelText(label));
+        expect(await screen.findByText(title)).toBeInTheDocument();
+      }
+    );
+
+    test.each(['XS', 'M', 'ML'])(
       'should not show the hoodie when filtering by %s',
       async (size) => {
         setupWithTitles();

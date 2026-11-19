@@ -14,21 +14,56 @@ State is held in React `useState` only. Reloading the page empties the cart.
 [`CartProduct.tsx`](../../../src/components/Cart/CartProducts/CartProduct/CartProduct.tsx)
 renders one line per product:
 
-- the `{sku}-1-cart.webp` thumbnail ([catalog images](catalog.md#product-images))
+- the `{sku}-1-cart.webp` thumbnail, or for a line with a color, the
+  `{sku}-N-cart.webp` that the product's `colorImages` maps that color to
+  ([catalog images](catalog.md#product-images))
 - the title
-- `"{first size} | {style}"`. For a product with no sizes,
-  [decision 0004](../decisions/0004-size-optional.md) requires just
-  `"{style}"`, but that is **not implemented yet**: today the line prints
-  `"undefined | {style}"` (`CartProduct.tsx` always reads `availableSizes[0]`).
-  The first story that adds a size-less product must fix it.
+- the parts that are present, joined with `" | "`: the first size, the chosen
+  color and the style. Apparel shows `"{first size} | {style}"` (for example
+  `"S | RHNL-032"`). A size-less product skips the size, and an empty style is
+  skipped too, so the TSTAPP-6 bottle shows just `"Black"` or `"White"`. The
+  line never prints `undefined`
+  ([decision 0004](../decisions/0004-size-optional.md)).
 - `Quantity: N`
 - the unit price and − / + buttons. − is disabled at quantity 1. The ×
-  button removes the line.
+  button removes the line. The three buttons have accessible names that
+  include the color and title (for example "Increase Black {title}
+  quantity"), because one product can have several lines.
 
-A product appears once, and adding it again increases the quantity. Lines are
-matched by product `id`. The shopper **does not choose a size**: the line shows the
+A product appears once per color, and adding it again increases the quantity.
+Lines are matched by product `id` and `color`. Products without colors have
+no `color`, so they match on `id` alone. The cart list keys each line by
+`id` and `color`. The shopper **does not choose a size**: the line shows the
 product's first listed size. Per-line size choice would be a new feature
 across the card, the cart model and the cart line.
+
+## Color choice
+
+A product with `availableColors` ([catalog](catalog.md#product-schema)) shows
+a "Color" radio group on its card, with nothing preselected (TSTAPP-6, the
+first product with colors).
+
+- Until a color is chosen, "Add to cart" is disabled and described by a
+  visible "Choose a color" hint, and Enter or Space on the card adds nothing.
+- The radios keep their native keys (arrows move, Space selects). Their key
+  events do not reach the card, so choosing a color never adds to the cart.
+- The radios have the card's `tabIndex` (1), so Tab reaches them right after
+  their own card and Shift+Tab returns to it; Enter there adds the chosen
+  color.
+- A visually hidden polite status announces the chosen color and that
+  adding is now possible.
+- The choice is card state. It stays chosen after adding and resets only when
+  the card unmounts.
+- Choosing a color switches the card image to that color's image (from
+  `colorImages`), on the front and on hover. Before a color is chosen, the
+  card shows image 1 with image 2 on hover.
+- The cart line gets the chosen `color`, and each color is its own line. Its
+  thumbnail is the color's `{sku}-N-cart.webp` from `colorImages` (the
+  bottle: Black `-1-cart`, White `-2-cart`), and the line text names the
+  color. There are no per-color SKUs, stock or color filter.
+- The card is a flex column with the price and "Add to cart" at the bottom,
+  so the color picker and hint do not push its button below the buttons of
+  the other cards in the row.
 
 ## Subtotal
 

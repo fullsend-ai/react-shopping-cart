@@ -247,6 +247,21 @@
         "sku": 6023683633399845,
         "style": "RHNL-031",
         "title": "Pullover Heather Grey Hoodie Unisex"
+      },
+      {
+        "availableSizes": [],
+        "currencyFormat": "$",
+        "currencyId": "USD",
+        "description": "21 oz insulated stainless steel water bottle, Standard Mouth, Red Hat logo print",
+        "id": 19,
+        "installments": 0,
+        "isFreeShipping": true,
+        "price": 34.95,
+        "sku": 2121000000000001,
+        "style": "",
+        "title": "Hydro Flask 21 oz Standard Mouth water bottle",
+        "availableColors": ["Black", "White"],
+        "colorImages": { "Black": 1, "White": 2 }
       }
     ]
   }

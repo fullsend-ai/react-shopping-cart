@@ -48,8 +48,11 @@ embroidery") and TSTAPP-3 ("Red Hat logo print") did this. A new brand is a new 
 - **Between groups: AND.** A product must match one of the selected sizes
   **and** one of the selected brands.
 - **Empty group = no filter.** With no size selected, every product passes the
-  size check, including products with `availableSizes: []`. With any size
-  selected, a product with no sizes is excluded.
+  size check.
+- **Size-less products pass the size check.** A product with
+  `availableSizes: []` is listed under any size selection, not only with none
+  ([decision 0004](../decisions/0004-size-optional.md), TSTAPP-6). The brand
+  group still applies to it. There is no per-product flag.
 
 Each toggle re-reads the catalog and applies both groups. `filterProducts`
 changes sizes and keeps the brand selection. `filterProductsByBrand` does the

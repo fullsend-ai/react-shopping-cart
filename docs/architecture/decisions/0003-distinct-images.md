@@ -5,10 +5,11 @@ TSTAPP-5
 
 ## Context
 
-Each product needs three images: `{sku}-1-product.webp` (card),
-`{sku}-2-product.webp` (shown when the card is hovered) and
-`{sku}-1-cart.webp` (cart thumbnail). See
-[catalog images](../components/catalog.md#product-images). Store pages often
+In the base case each product needs three images: `{sku}-1-product.webp`
+(card), `{sku}-2-product.webp` (shown when the card is hovered) and
+`{sku}-1-cart.webp` (cart thumbnail). A product with `colorImages` also needs
+`{sku}-N-product.webp` and `{sku}-N-cart.webp` for every image number N it
+maps. See [catalog images](../components/catalog.md#product-images). Store pages often
 have a single photo, and the easy fix of copying it into both product slots
 makes the hover do nothing.
 

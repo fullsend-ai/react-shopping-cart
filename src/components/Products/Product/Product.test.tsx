@@ -1,13 +1,21 @@
 import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import path from 'path';
-import { screen } from '@testing-library/react';
+import {
+  queryAllByAttribute,
+  queryByAttribute,
+  screen,
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithThemeProvider } from 'utils/test/test-utils';
 import matchesBrand from 'utils/matchesBrand';
 import { CartProvider } from 'contexts/cart-context';
 import { mockCartProducts } from 'utils/test/mocks';
 import { getProducts } from 'services/products';
 import { availableSizes } from 'components/Filter/Filter';
+import Cart from 'components/Cart';
+import Products from 'components/Products';
+import { IProduct } from 'models';
 
 import Product from '.';
 
@@ -46,6 +54,32 @@ describe('[components] - Product', () => {
 
     setup({ product });
     expect(screen.getByText('Free shipping')).toBeInTheDocument();
+  });
+
+  // A color without a colorImages entry would fall back to images 1 and 2
+  // (contradicting the choice), and a mapped image number without files
+  // would throw during render. Check every color product in the catalog.
+  test('should map every color to an image number with product and cart files', async () => {
+    const products = await getProducts();
+    const colorProducts = products.filter(
+      ({ availableColors, colorImages }) => availableColors || colorImages
+    );
+
+    colorProducts.forEach(({ sku, availableColors = [], colorImages = {} }) => {
+      expect(availableColors.length).toBeGreaterThan(0);
+      expect(Object.keys(colorImages).sort()).toEqual(
+        [...availableColors].sort()
+      );
+
+      Object.values(colorImages).forEach((n) => {
+        expect(() =>
+          require(`static/products/${sku}-${n}-product.webp`)
+        ).not.toThrow();
+        expect(() =>
+          require(`static/products/${sku}-${n}-cart.webp`)
+        ).not.toThrow();
+      });
+    });
   });
 
   describe('Red Hat AI Black T-Shirt', () => {
@@ -112,7 +146,9 @@ describe('[components] - Product', () => {
     const imagePath = (file: string) =>
       path.resolve(__dirname, '../../../static/products', file);
     const checksum = (file: string) =>
-      createHash('sha256').update(readFileSync(imagePath(file))).digest('hex');
+      createHash('sha256')
+        .update(readFileSync(imagePath(file)))
+        .digest('hex');
 
     test('should be in the catalog with the requested details', async () => {
       const products = await getProducts();
@@ -199,7 +235,9 @@ describe('[components] - Product', () => {
     const imagePath = (file: string) =>
       path.resolve(__dirname, '../../../static/products', file);
     const checksum = (file: string) =>
-      createHash('sha256').update(readFileSync(imagePath(file))).digest('hex');
+      createHash('sha256')
+        .update(readFileSync(imagePath(file)))
+        .digest('hex');
 
     test('should be in the catalog once with the requested details', async () => {
       const products = await getProducts();
@@ -280,6 +318,433 @@ describe('[components] - Product', () => {
       expect(screen.getByText('35')).toBeInTheDocument();
       expect(screen.getByText('.92')).toBeInTheDocument();
       expect(screen.getByText('Free shipping')).toBeInTheDocument();
+    });
+  });
+
+  describe('Hydro Flask 21 oz Standard Mouth water bottle', () => {
+    const title = 'Hydro Flask 21 oz Standard Mouth water bottle';
+    const imagePath = (file: string) =>
+      path.resolve(__dirname, '../../../static/products', file);
+    const checksum = (file: string) =>
+      createHash('sha256')
+        .update(readFileSync(imagePath(file)))
+        .digest('hex');
+    // Width and height of a WebP file, read from its first chunk.
+    const dimensions = (file: string) => {
+      const data = readFileSync(imagePath(file));
+      const chunk = data.toString('ascii', 12, 16);
+      if (chunk === 'VP8 ') {
+        return [data.readUInt16LE(26) & 0x3fff, data.readUInt16LE(28) & 0x3fff];
+      }
+      if (chunk === 'VP8L') {
+        const bits = data.readUInt32LE(21);
+        return [(bits & 0x3fff) + 1, ((bits >> 14) & 0x3fff) + 1];
+      }
+      return [data.readUIntLE(24, 3) + 1, data.readUIntLE(27, 3) + 1];
+    };
+
+    const getBottle = async () => {
+      const products = await getProducts();
+      return products.find((p) => p.title === title) as IProduct;
+    };
+
+    const getApparel = async () => {
+      const products = await getProducts();
+      return products.find(
+        (p) => p.title === 'Craghoppers Grey Half Zip Fleece'
+      ) as IProduct;
+    };
+
+    const setupWithCart = (...products: IProduct[]) =>
+      renderWithThemeProvider(
+        <CartProvider>
+          {products.map((product) => (
+            <Product product={product} key={product.id} />
+          ))}
+          <Cart />
+        </CartProvider>
+      );
+
+    const cartLineTexts = () =>
+      screen.queryAllByText(/Quantity:/).map((desc) => desc.textContent);
+
+    test('should be in the catalog once with the requested details', async () => {
+      const products = await getProducts();
+      const matches = products.filter((p) => p.title === title);
+
+      expect(matches).toHaveLength(1);
+      expect(matches[0]).toEqual({
+        id: 19,
+        sku: 2121000000000001,
+        title,
+        description:
+          '21 oz insulated stainless steel water bottle, Standard Mouth, Red Hat logo print',
+        availableSizes: [],
+        availableColors: ['Black', 'White'],
+        colorImages: { Black: 1, White: 2 },
+        style: '',
+        price: 34.95,
+        installments: 0,
+        currencyId: 'USD',
+        currencyFormat: '$',
+        isFreeShipping: true,
+      });
+    });
+
+    test('should have a unique id and a unique safe-integer sku', async () => {
+      const products = await getProducts();
+      const product = await getBottle();
+
+      expect(Number.isSafeInteger(product.sku)).toBe(true);
+      expect(products.filter(({ id }) => id === product.id)).toHaveLength(1);
+      expect(products.filter(({ sku }) => sku === product.sku)).toHaveLength(1);
+    });
+
+    test('should match the Red Hat brand filter', async () => {
+      const product = await getBottle();
+
+      expect(matchesBrand(product, 'Red Hat')).toBe(true);
+    });
+
+    test('should have product and cart images', async () => {
+      const { sku } = await getBottle();
+
+      expect(() =>
+        require(`static/products/${sku}-1-product.webp`)
+      ).not.toThrow();
+      expect(() =>
+        require(`static/products/${sku}-2-product.webp`)
+      ).not.toThrow();
+      expect(() => require(`static/products/${sku}-1-cart.webp`)).not.toThrow();
+      expect(() => require(`static/products/${sku}-2-cart.webp`)).not.toThrow();
+    });
+
+    test('should have a different cart image for each color', async () => {
+      const { sku } = await getBottle();
+
+      expect(checksum(`${sku}-2-cart.webp`)).not.toBe(
+        checksum(`${sku}-1-cart.webp`)
+      );
+    });
+
+    test('should not reuse the front image as the hover image', async () => {
+      const { sku } = await getBottle();
+
+      expect(checksum(`${sku}-2-product.webp`)).not.toBe(
+        checksum(`${sku}-1-product.webp`)
+      );
+    });
+
+    test('should have images the size of an existing product', async () => {
+      const { sku } = await getBottle();
+      const { sku: existingSku } = await getApparel();
+
+      ['1-product', '2-product', '1-cart'].forEach((suffix) => {
+        expect(dimensions(`${sku}-${suffix}.webp`)).toEqual(
+          dimensions(`${existingSku}-${suffix}.webp`)
+        );
+      });
+      // Apparel has no second cart image, so compare with its first one.
+      expect(dimensions(`${sku}-2-cart.webp`)).toEqual(
+        dimensions(`${existingSku}-1-cart.webp`)
+      );
+    });
+
+    test('should render with its price and free shipping', async () => {
+      setupWithCart(await getBottle());
+
+      expect(screen.getByText(title)).toBeInTheDocument();
+      expect(screen.getByText('34')).toBeInTheDocument();
+      expect(screen.getByText('.95')).toBeInTheDocument();
+      expect(screen.getByText('Free shipping')).toBeInTheDocument();
+    });
+
+    test('should require a color before adding to the cart', async () => {
+      setupWithCart(await getBottle());
+      const addButton = screen.getByRole('button', { name: 'Add to cart' });
+
+      expect(
+        screen.getByRole('group', { name: 'Color' })
+      ).toHaveAccessibleDescription('Choose a color');
+      expect(screen.getByRole('radio', { name: 'Black' })).not.toBeChecked();
+      expect(screen.getByRole('radio', { name: 'White' })).not.toBeChecked();
+      expect(addButton).toBeDisabled();
+      expect(addButton).toHaveAccessibleDescription('Choose a color');
+      expect(screen.getByText('Choose a color')).toBeVisible();
+
+      // In this isolated render the card is the first tab stop (tabIndex 1).
+      await userEvent.tab();
+      await userEvent.keyboard('{Enter}');
+      await userEvent.keyboard(' ');
+      await userEvent.click(addButton);
+
+      expect(cartLineTexts()).toHaveLength(0);
+      expect(screen.getByTitle('Products in cart quantity')).toHaveTextContent(
+        /^0$/
+      );
+    });
+
+    test('should not add to the cart while picking a color by keyboard', async () => {
+      setupWithCart(await getBottle());
+      const black = screen.getByRole('radio', { name: 'Black' });
+      const white = screen.getByRole('radio', { name: 'White' });
+
+      black.focus();
+      await userEvent.keyboard(' ');
+      expect(black).toBeChecked();
+      await userEvent.keyboard('{ArrowRight}');
+      expect(white).toBeChecked();
+      expect(white).toHaveFocus();
+      await userEvent.keyboard('{Enter}');
+      await userEvent.keyboard(' ');
+
+      expect(cartLineTexts()).toHaveLength(0);
+      expect(screen.getByTitle('Products in cart quantity')).toHaveTextContent(
+        /^0$/
+      );
+      expect(screen.queryByText('Choose a color')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('group', { name: 'Color' })
+      ).not.toHaveAccessibleDescription();
+      expect(screen.getByRole('button', { name: 'Add to cart' })).toBeEnabled();
+    });
+
+    test('should add the chosen color as a cart line and keep it chosen', async () => {
+      setupWithCart(await getBottle());
+
+      await userEvent.click(screen.getByRole('radio', { name: 'White' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add to cart' })
+      );
+
+      expect(cartLineTexts()).toEqual(['White Quantity: 1']);
+      // The line price and the subtotal.
+      expect(screen.getAllByText('$ 34.95')).toHaveLength(2);
+      expect(screen.queryByText(/undefined/)).not.toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'White' })).toBeChecked();
+    });
+
+    test('should add the chosen color from the keyboard in the page tab order', async () => {
+      const products = await getProducts();
+      const bottle = await getBottle();
+      // The bottle among other cards, rendered by the real Products grid with
+      // the cart after it: every card has tabIndex 1, the cart's controls 0.
+      renderWithThemeProvider(
+        <CartProvider>
+          <Products
+            products={[
+              products[0],
+              products[1],
+              bottle,
+              products[2],
+              products[3],
+            ]}
+          />
+          <Cart />
+        </CartProvider>
+      );
+      // The cards in DOM order (the bottle's radios also have tabIndex 1).
+      const cards = queryAllByAttribute('tabindex', document.body, '1').filter(
+        (element) => element.tagName !== 'INPUT'
+      );
+      expect(cards).toHaveLength(5);
+      const bottleCard = cards[2];
+      expect(bottleCard).toHaveTextContent(title);
+      const black = screen.getByRole('radio', { name: 'Black' });
+      const status = screen.getByRole('status');
+
+      expect(status).toHaveTextContent('');
+
+      // Tab through the cards before the bottle's: two apparel cards, then
+      // the bottle card, then its color radios.
+      await userEvent.tab();
+      await userEvent.tab();
+      expect(bottleCard).not.toHaveFocus();
+      await userEvent.tab();
+      expect(bottleCard).toHaveFocus();
+      await userEvent.tab();
+      expect(black).toHaveFocus();
+      await userEvent.keyboard(' ');
+      expect(black).toBeChecked();
+      expect(status).toHaveTextContent('Black chosen. You can add to cart.');
+
+      // Shift+Tab goes back to the bottle card, where Enter adds the color.
+      await userEvent.tab({ shift: true });
+      expect(bottleCard).toHaveFocus();
+      await userEvent.keyboard('{Enter}');
+
+      expect(cartLineTexts()).toEqual(['Black Quantity: 1']);
+
+      // Tab from the radios goes on to the next card, not to the cart.
+      black.focus();
+      await userEvent.tab();
+      expect(cards[3]).toHaveFocus();
+    });
+
+    test('should merge the same color and split different colors', async () => {
+      setupWithCart(await getBottle());
+      const addButton = screen.getByRole('button', { name: 'Add to cart' });
+
+      await userEvent.click(screen.getByRole('radio', { name: 'Black' }));
+      await userEvent.click(addButton);
+      await userEvent.click(screen.getByRole('radio', { name: 'White' }));
+      await userEvent.click(addButton);
+      await userEvent.click(addButton);
+
+      expect(cartLineTexts()).toEqual([
+        'Black Quantity: 1',
+        'White Quantity: 2',
+      ]);
+      // The cart badge.
+      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getByText('$ 104.85')).toBeInTheDocument();
+
+      // Cart lines are in the order they were added: Black, then White.
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: `Increase Black ${title} quantity`,
+        })
+      );
+      expect(cartLineTexts()).toEqual([
+        'Black Quantity: 2',
+        'White Quantity: 2',
+      ]);
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: `Decrease White ${title} quantity`,
+        })
+      );
+      expect(cartLineTexts()).toEqual([
+        'Black Quantity: 2',
+        'White Quantity: 1',
+      ]);
+
+      await userEvent.click(
+        screen.getByRole('button', { name: `Remove Black ${title} from cart` })
+      );
+      expect(cartLineTexts()).toEqual(['White Quantity: 1']);
+      expect(screen.getByText('1')).toBeInTheDocument();
+    });
+
+    describe('images follow the chosen color', () => {
+      // The card image is a styled div with an alt attribute: read its
+      // resolved background image. Call it before anything is in the cart,
+      // whose thumbnail has the same alt text.
+      const cardImage = (productTitle: string) =>
+        window.getComputedStyle(
+          queryByAttribute('alt', document.body, productTitle) as HTMLElement
+        ).backgroundImage;
+      const cartImages = () =>
+        screen
+          .queryAllByRole('img')
+          .map((img) => img.getAttribute('src'))
+          .filter(Boolean);
+
+      test('should show the chosen color on the card', async () => {
+        const { sku } = await getBottle();
+        setupWithCart(await getBottle());
+
+        expect(cardImage(title)).toContain(`${sku}-1-product.webp`);
+
+        await userEvent.click(screen.getByRole('radio', { name: 'White' }));
+        expect(cardImage(title)).toContain(`${sku}-2-product.webp`);
+
+        await userEvent.click(screen.getByRole('radio', { name: 'Black' }));
+        expect(cardImage(title)).toContain(`${sku}-1-product.webp`);
+      });
+
+      test('should show the color of each cart line', async () => {
+        const { sku } = await getBottle();
+        setupWithCart(await getBottle());
+        const addButton = screen.getByRole('button', { name: 'Add to cart' });
+
+        await userEvent.click(screen.getByRole('radio', { name: 'White' }));
+        await userEvent.click(addButton);
+        expect(cartImages()).toEqual([`${sku}-2-cart.webp`]);
+
+        await userEvent.click(screen.getByRole('radio', { name: 'Black' }));
+        await userEvent.click(addButton);
+        expect(cartLineTexts()).toEqual([
+          'White Quantity: 1',
+          'Black Quantity: 1',
+        ]);
+        expect(cartImages()).toEqual([
+          `${sku}-2-cart.webp`,
+          `${sku}-1-cart.webp`,
+        ]);
+      });
+
+      test('should leave apparel images unchanged', async () => {
+        const apparel = await getApparel();
+        setupWithCart(apparel);
+
+        expect(cardImage(apparel.title)).toContain(
+          `${apparel.sku}-1-product.webp`
+        );
+
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Add to cart' })
+        );
+        expect(cartImages()).toEqual([`${apparel.sku}-1-cart.webp`]);
+      });
+    });
+
+    test('should leave apparel without a color picker and add it at once', async () => {
+      setupWithCart(await getApparel());
+      const addButton = screen.getByRole('button', { name: 'Add to cart' });
+
+      expect(screen.queryByRole('group', { name: 'Color' })).toBeNull();
+      expect(screen.queryByText('Choose a color')).not.toBeInTheDocument();
+      expect(addButton).toBeEnabled();
+
+      await userEvent.tab();
+      await userEvent.keyboard('{Enter}');
+      expect(cartLineTexts()).toEqual(['S | RHNL-032 Quantity: 1']);
+
+      await userEvent.click(addButton);
+      expect(cartLineTexts()).toEqual(['S | RHNL-032 Quantity: 2']);
+    });
+
+    describe('checkout', () => {
+      let alertSpy: jest.SpyInstance;
+
+      beforeEach(() => {
+        alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+      });
+
+      afterEach(() => {
+        alertSpy.mockRestore();
+      });
+
+      test('should check out with only the bottle in the cart', async () => {
+        setupWithCart(await getBottle());
+
+        await userEvent.click(screen.getByRole('radio', { name: 'Black' }));
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Add to cart' })
+        );
+        await userEvent.click(screen.getByRole('button', { name: 'Checkout' }));
+
+        expect(alertSpy).toHaveBeenCalledWith('Checkout - Subtotal: $ 34.95');
+      });
+
+      test('should check out with the bottle and apparel in the cart', async () => {
+        const apparel = await getApparel();
+        setupWithCart(await getBottle(), apparel);
+        const [bottleButton, apparelButton] = screen.getAllByRole('button', {
+          name: 'Add to cart',
+        });
+
+        await userEvent.click(apparelButton);
+        await userEvent.click(screen.getByRole('radio', { name: 'Black' }));
+        await userEvent.click(bottleButton);
+        await userEvent.click(screen.getByRole('button', { name: 'Checkout' }));
+
+        expect(alertSpy).toHaveBeenCalledWith(
+          `Checkout - Subtotal: $ ${(apparel.price + 34.95).toFixed(2)}`
+        );
+      });
     });
   });
 });

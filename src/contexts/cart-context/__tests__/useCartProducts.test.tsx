@@ -153,5 +153,61 @@ describe('[contexts] - cart-context', () => {
         expect(mockUpdateCartTotal).toHaveBeenNthCalledWith(1, products);
       });
     });
+
+    describe('colors', () => {
+      const black: ICartProduct = {
+        ...mockCartProducts[0],
+        availableColors: ['Black', 'White'],
+        color: 'Black',
+      };
+      const white: ICartProduct = { ...black, color: 'White' };
+
+      const setup = (initialProducts: ICartProduct[]) => {
+        setupMockUseContext(initialProducts);
+        jest.spyOn(useCartTotalModule, 'default').mockImplementation(() => ({
+          total: {} as ICartTotal,
+          updateCartTotal: jest.fn(),
+        }));
+        return renderHook(() => useCartProducts(), { wrapper });
+      };
+
+      afterEach(() => {
+        resetMocks();
+      });
+
+      test('should add another color of the same product as its own line', () => {
+        const { result } = setup([black]);
+
+        result.current.addProduct(white);
+        expect(products).toEqual([black, white]);
+      });
+
+      test('should merge the same color into one line', () => {
+        const { result } = setup([black, white]);
+
+        result.current.addProduct(white);
+        expect(products.map((p) => [p.color, p.quantity])).toEqual([
+          ['Black', 1],
+          ['White', 2],
+        ]);
+      });
+
+      test('should change only the quantity of the chosen color', () => {
+        const { result } = setup([black, white]);
+
+        result.current.increaseProductQuantity(black);
+        expect(products.map((p) => [p.color, p.quantity])).toEqual([
+          ['Black', 2],
+          ['White', 1],
+        ]);
+      });
+
+      test('should remove only the chosen color', () => {
+        const { result } = setup([black, white]);
+
+        result.current.removeProduct(black);
+        expect(products).toEqual([white]);
+      });
+    });
   });
 });

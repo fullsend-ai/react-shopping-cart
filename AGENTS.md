@@ -1,5 +1,23 @@
 # Agent instructions
 
+## Architecture docs
+
+`docs/architecture/` is the context that planning agents read before work is
+written or coded, so it must stay current (issue #110).
+
+1. If a change alters behavior that `docs/architecture/` describes (component
+   docs, `ARCHITECTURE.md`, `constraints.md`, decision records), update those
+   docs **in the same PR**. Do this even if the story suggests a separate
+   docs PR. This extends the same-PR rule for decision records in
+   [`decisions/README.md`](docs/architecture/decisions/README.md) to the
+   whole folder.
+2. Such a PR is merged by a person, because `docs/` is not on the auto-merge
+   allowlist
+   ([`delivery.md`](docs/architecture/delivery.md#auto-merge-rules)). Accept
+   that, and say so up front in the PR body's merge note.
+3. Do not put a "docs follow-up" section in the PR body. Agents cannot open
+   the follow-up PR, so nothing would track it.
+
 ## Dependency updates
 
 ### TypeScript is held at 4.9

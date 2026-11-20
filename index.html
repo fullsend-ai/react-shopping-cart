@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fullsend: Ask to Pull Request</title>
+<meta name="description" content="One feature request on a demo React storefront, from business ask to a reviewed pull request, through fullsend's pluggable stations, agents and human gates.">
+<link rel="icon" href="img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script>
+(function(){try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
+<style>
+/* Palette and type follow fullsend.sh. Layout: one transit line down the page; each stop is a station with its video. Gates are diamonds. */
+:root {
+  --bg:#f8fafc; --bg-elevated:#ffffff; --border:#e2e8f0;
+  --text:#1e293b; --text-dim:#475569; --text-muted:#64748b;
+  --accent:#4d7c0f; --accent-dim:#3f6212; --accent-contrast:#fff;
+  --accent-soft:rgba(77,124,15,.08); --accent-line:rgba(77,124,15,.25);
+  --blue:#2563eb; --purple:#7c3aed; --gate:#b45309; --gate-soft:rgba(180,83,9,.08);
+  --code-bg:#0c1220; --code-fg:#e8edf4;
+  --font-body:'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme:light;
+}
+[data-theme="dark"] {
+  --bg:#0c1220; --bg-elevated:#131c2e; --border:#1e3050;
+  --text:#e8edf4; --text-dim:#8ba0be; --text-muted:#5a7294;
+  --accent:#c4ff0e; --accent-dim:#92bf0a; --accent-contrast:#0c1220;
+  --accent-soft:rgba(196,255,14,.08); --accent-line:rgba(196,255,14,.22);
+  --blue:#5cb3ff; --purple:#a78bfa; --gate:#fbbf24; --gate-soft:rgba(251,191,36,.08);
+  --code-bg:#080d18; --code-fg:#e8edf4;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;font-size:16px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+a{color:var(--accent);text-underline-offset:3px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.03em}
+p{margin:0}
+code{font-family:var(--font-mono);font-size:.85em;background:var(--accent-soft);border:1px solid var(--accent-line);padding:.05em .35em;border-radius:5px;overflow-wrap:anywhere}
+.label{font-family:var(--font-mono);font-size:.78rem;font-weight:500;text-transform:uppercase;letter-spacing:.15em;color:var(--accent)}
+
+/* Nav */
+nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+nav .wrap{height:3.5rem;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem;color:var(--accent);text-decoration:none;letter-spacing:-.02em}
+.brand img{width:28px;height:28px;border-radius:7px}
+.nav-links{display:flex;align-items:center;gap:18px;font-size:.92rem}
+.nav-links a{color:var(--text-dim);text-decoration:none}
+.nav-links a:hover{color:var(--text)}
+.nav-links .cta{background:var(--accent);color:var(--accent-contrast);padding:.4rem .9rem;border-radius:7px;font-weight:600}
+.theme-toggle{background:none;border:1px solid var(--border);color:var(--text-dim);width:34px;height:34px;border-radius:8px;cursor:pointer;display:grid;place-items:center}
+.theme-toggle svg{width:16px;height:16px;fill:currentColor}
+[data-theme="dark"] .icon-moon,[data-theme="light"] .icon-sun{display:none}
+@media (max-width:620px){.nav-links .hide-sm{display:none}}
+
+/* Hero */
+.hero{padding-top:72px;padding-bottom:48px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:48px;align-items:center}
+@media (max-width:860px){.hero{grid-template-columns:1fr;padding-top:40px;gap:32px}}
+.badge{display:inline-block;font-family:var(--font-mono);font-size:.78rem;font-weight:500;padding:.35rem .9rem;border-radius:20px;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent);letter-spacing:.03em;margin-bottom:1.25rem}
+.hero h1{font-size:clamp(2.2rem,5vw,3.6rem);font-weight:800;line-height:1.05;margin-bottom:1.25rem}
+.hero h1 .accent{color:var(--accent)}
+.hero .sub{font-size:1.12rem;color:var(--text-dim);max-width:58ch}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:1.75rem}
+.btn{display:inline-flex;align-items:center;gap:.4rem;font-weight:600;padding:.7rem 1.4rem;border-radius:8px;text-decoration:none;font-size:.98rem}
+.btn-primary{background:var(--accent);color:var(--accent-contrast)}
+.btn-secondary{border:1px solid var(--border);color:var(--text);background:var(--bg-elevated)}
+.btn:hover{opacity:.9}
+
+/* Route card in hero */
+.route{background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:20px;font-family:var(--font-mono);font-size:.82rem;display:grid;gap:0}
+.route .r{display:grid;grid-template-columns:22px 1fr;gap:12px;align-items:start;position:relative;padding-bottom:16px}
+.route .r:last-child{padding-bottom:0}
+.route .r::before{content:"";position:absolute;left:10px;top:18px;bottom:-2px;width:2px;background:var(--accent-line)}
+.route .r:last-child::before{display:none}
+.route .d{width:22px;height:22px;border-radius:50%;border:3px solid var(--accent);background:var(--bg-elevated);position:relative;z-index:1}
+.route .r.g .d{border-color:var(--gate);border-radius:4px;transform:rotate(45deg) scale(.78)}
+.route b{display:block;color:var(--text);font-weight:600}
+.route span{color:var(--text-muted)}
+
+section{padding:64px 0;border-top:1px solid var(--border)}
+.sec-title{font-size:clamp(1.7rem,3.4vw,2.4rem);font-weight:800;margin:.6rem 0 .9rem}
+.sec-desc{color:var(--text-dim);max-width:66ch;margin-bottom:32px}
+
+/* Before / after */
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+@media (max-width:860px){.shots{grid-template-columns:1fr;max-width:460px}}
+.shots figure{margin:0}
+.shots img{width:100%;height:auto;border-radius:8px;border:1px solid var(--border);display:block}
+
+/* Stations map */
+.phases{display:grid;grid-template-columns:3fr 1fr;gap:12px}
+.phase:first-child{grid-column:1 / -1}
+@media (max-width:860px){.phases{grid-template-columns:1fr}}
+.phase{background:var(--bg-elevated);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:10px;padding:16px;min-width:0}
+.phase h3{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px}
+.sts{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px}
+@media (max-width:860px){.sts{grid-auto-flow:row}}
+.st{border-radius:8px;padding:12px;border:1px dashed var(--border);display:grid;gap:4px;align-content:start;opacity:.6}
+.st.on{opacity:1;border:1px solid var(--accent-line);background:var(--accent-soft)}
+.st .n{font-family:var(--font-mono);font-size:.75rem;color:var(--accent);font-weight:600}
+.st b{font-size:1rem;letter-spacing:-.01em}
+.st .d{font-size:.8rem;color:var(--text-muted)}
+.st .here{font-family:var(--font-mono);font-size:.74rem;color:var(--text);margin-top:4px}
+.st:not(.on) .here{color:var(--text-muted)}
+.card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:20px;display:grid;gap:12px;align-content:start;min-width:0}
+.card h3{font-size:1.05rem}
+.mock{font-family:var(--font-mono);font-size:.8rem;line-height:1.55;border-radius:8px;padding:14px}
+.mock.alert{border:1px dashed var(--border);color:var(--text-muted)}
+.mock.sum{border:1px solid var(--accent-line);display:grid;gap:6px}
+.mock .row{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.mock .sm{color:var(--text-muted);font-size:.74rem}
+.mock .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.mock .btns span{padding:5px 10px;border-radius:6px;border:1px solid var(--border)}
+.mock .btns span:first-child{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+.note{font-size:.85rem;color:var(--text-muted)}
+
+/* The line */
+.line{list-style:none;margin:0;padding:0}
+.stop{display:grid;grid-template-columns:36px minmax(0,1fr);gap:0 20px}
+.rail{position:relative;display:flex;justify-content:center}
+.rail::before{content:"";position:absolute;top:0;bottom:0;width:3px;background:var(--accent-line)}
+.stop:first-child .rail::before{top:16px}
+.stop:last-child .rail::before{bottom:auto;height:16px}
+.dot{position:relative;margin-top:6px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:4px solid var(--accent)}
+.stop.gate .dot{border-color:var(--gate);border-radius:4px;transform:rotate(45deg) scale(.82)}
+.stop-body{padding-bottom:56px;display:grid;gap:16px;min-width:0}
+.stop:last-child .stop-body{padding-bottom:0}
+.tag{font-family:var(--font-mono);font-size:.76rem;font-weight:500;color:var(--accent)}
+.stop.gate .tag{color:var(--gate)}
+.stop h3{font-size:1.4rem;font-weight:700;margin-top:4px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:28px;align-items:start}
+.cols.short{grid-template-columns:minmax(0,1.4fr) minmax(0,.8fr)}
+@media (max-width:820px){.cols,.cols.short{grid-template-columns:1fr}}
+.txt{display:grid;gap:12px;min-width:0;color:var(--text-dim)}
+.txt strong{color:var(--text)}
+.txt ul{margin:0;padding-left:1.1em;display:grid;gap:6px}
+.video{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--code-bg)}
+.video.vertical{aspect-ratio:9/16;max-width:340px;justify-self:center}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.gatebox{background:var(--gate-soft);border-left:3px solid var(--gate);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.94rem;color:var(--text)}
+.gatebox b{color:var(--gate)}
+.who{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:.78rem;color:var(--text-muted);flex-wrap:wrap}
+.who img{width:22px;height:22px;border-radius:50%;border:1px solid var(--border)}
+
+/* Cast */
+.cast{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px}
+.actor{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:18px;display:grid;gap:8px;align-content:start;transition:border-color .2s}
+.actor:hover{border-color:var(--accent-line)}
+.actor .ic{width:38px;height:38px;border-radius:50%;overflow:hidden;border:1px solid var(--border);display:grid;place-items:center;font-family:var(--font-mono);font-weight:600;font-size:.8rem;background:var(--accent-soft);color:var(--accent)}
+.actor .ic img{width:100%;height:100%;object-fit:cover}
+.actor.human .ic{background:var(--gate-soft);color:var(--gate);border-color:var(--gate)}
+.actor .nm{font-weight:700}
+.actor .role{font-family:var(--font-mono);font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em}
+.actor p{color:var(--text-dim);font-size:.92rem}
+
+/* Work types */
+.wt{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}
+@media (max-width:860px){.wt{grid-template-columns:1fr}}
+.wt-text{display:grid;gap:14px;color:var(--text-dim);min-width:0}
+.wt-text strong{color:var(--text)}
+.binds{list-style:none;padding:0;margin:0;border-top:1px solid var(--border)}
+.binds li{display:grid;grid-template-columns:10em 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.binds b{font-family:var(--font-mono);font-size:.82rem;color:var(--accent);font-weight:600}
+@media (max-width:480px){.binds li{grid-template-columns:1fr;gap:2px}}
+pre.yaml{margin:0;background:var(--code-bg);color:var(--code-fg);border:1px solid var(--border);border-radius:10px;padding:20px;font:13px/1.7 var(--font-mono);overflow-x:auto}
+pre.yaml .k{color:#c4ff0e}
+pre.yaml .c{color:#5a7294}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;margin-top:28px}
+
+/* Principles */
+.prin{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:28px}
+.prin h3{font-size:1.1rem;margin-bottom:6px}
+.prin p{color:var(--text-dim)}
+
+/* Plug */
+.plug{background:var(--bg-elevated);border:1px solid var(--accent-line);border-radius:14px;padding:32px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:center}
+.plug img{width:88px;height:88px;border-radius:18px}
+.plug h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:800;margin-bottom:8px}
+.plug p{color:var(--text-dim);max-width:60ch}
+@media (max-width:560px){.plug{grid-template-columns:1fr;padding:22px}}
+.links{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:8px}
+.links li{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.links span{font-family:var(--font-mono);font-size:.8rem;color:var(--text-muted)}
+footer{padding:28px 0 40px;border-top:1px solid var(--border);color:var(--text-muted);font-size:.85rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="https://fullsend.sh" target="_blank" rel="noopener"><img src="img/logo.png" alt="">Fullsend</a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#stations">Stations</a>
+      <a class="hide-sm" href="#run">The run</a>
+      <a class="hide-sm" href="#cast">Agents</a>
+      <a class="hide-sm" href="#work-types">Work types</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24"><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-1-13a1 1 0 0 1 2 0v2a1 1 0 0 1-2 0zm0 16a1 1 0 0 1 2 0v2a1 1 0 0 1-2 0zM3 11h2a1 1 0 0 1 0 2H3a1 1 0 0 1 0-2zm16 0h2a1 1 0 0 1 0 2h-2a1 1 0 0 1 0-2z"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+      </button>
+      <a class="cta" href="https://fullsend.sh/docs/" target="_blank" rel="noopener">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <div>
+    <div class="badge">End-to-end demo · Agentic SDLC · Human gates</div>
+    <h1>From business ask to<br><span class="accent">reviewed pull request.</span></h1>
+    <p class="sub">One feature request on a demo React storefront, carried through fullsend's pipeline. Agents wrote the requirement, the engineering strategy and the code. People made every decision that mattered, and every step left a record in Jira and GitHub.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#run">Watch the run</a>
+      <a class="btn btn-secondary" href="https://github.com/fullsend-ai/react-shopping-cart/pull/109" target="_blank" rel="noopener">See the PR ↗</a>
+    </div>
+  </div>
+  <div class="route" aria-label="Pipeline route">
+    <div class="r"><i class="d"></i><div><b>ST1 · rfe-creator</b><span>WHAT · react-shopping-cart</span></div></div>
+    <div class="r g"><i class="d"></i><div><b>product manager</b><span>feature input · answers open questions</span></div></div>
+    <div class="r"><i class="d"></i><div><b>ST2 · strat-creator</b><span>HOW · react-shopping-cart-strategy</span></div></div>
+    <div class="r g"><i class="d"></i><div><b>software engineer</b><span>folds in review · pushes · /fs-code</span></div></div>
+    <div class="r"><i class="d"></i><div><b>ST4–5 · code · review · fix</b><span>PR #109 in the storefront</span></div></div>
+    <div class="r g"><i class="d"></i><div><b>human approval</b><span>merge stays a human call</span></div></div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="label">The feature · TSTAPP-8</div>
+    <h2 class="sec-title">An in-page order summary at checkout instead of a browser alert</h2>
+    <p class="sec-desc">The storefront is <a href="https://github.com/fullsend-ai/react-shopping-cart" target="_blank" rel="noopener">fullsend-ai/react-shopping-cart</a>, a small React demo store whose work is tracked as Stories in the Jira project TSTAPP. Its checkout button opened a browser <code>alert()</code> showing only the subtotal. The ask was a real review step before the order.</p>
+    <div class="shots">
+      <figure class="card">
+        <div class="label">Before · main</div>
+        <img src="img/before-cart.png" alt="The cart panel before the change: two items, subtotal $36.80 and a Checkout button" width="900" height="1720" loading="lazy">
+        <div class="mock alert" aria-label="The browser alert Checkout opened">localhost says<br>Checkout - Subtotal: $ 36.80<br><br>[ OK ]</div>
+        <figcaption class="note">Checkout opened this browser alert, captured from the running store. Only the subtotal, and no way back to the cart.</figcaption>
+      </figure>
+      <figure class="card">
+        <div class="label">After · PR #109</div>
+        <img src="img/after-summary.png" alt="The new in-page Order summary: each line with size and style, quantity and price, subtotal with installments, and Confirm order and Back to cart buttons" width="900" height="1180" loading="lazy">
+        <figcaption class="note">Checkout now opens an Order summary in the cart panel, with Confirm order and Back to cart. Focus moves to the heading.</figcaption>
+      </figure>
+      <figure class="card">
+        <div class="label">After · confirmed</div>
+        <img src="img/after-confirmed.png" alt="The thank-you message after Confirm order, with a Keep shopping button" width="900" height="700" loading="lazy">
+        <figcaption class="note">Confirm order empties the cart and thanks the shopper, without promising anything the store doesn't do. An empty cart gets its own message.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section id="stations">
+  <div class="wrap">
+    <div class="label">The station model</div>
+    <h2 class="sec-title">Eight stations across the lifecycle</h2>
+    <p class="sec-desc">fullsend models delivery as eight stations in three phases. This demo ran a single Story, so it lit up the stations below; the others are part of the model but were not exercised here.</p>
+    <div class="phases">
+      <div class="phase"><h3>Phase 01 · Plan</h3><div class="sts">
+        <div class="st"><span class="n">ST0</span><b>Portfolio</b><span class="d">Ideation and strategic ranking</span><span class="here">not in this demo</span></div>
+        <div class="st on"><span class="n">ST1</span><b>Intake</b><span class="d">Request processing</span><span class="here">rfe-creator + PM</span></div>
+        <div class="st on"><span class="n">ST2</span><b>Solution</b><span class="d">Feature specification</span><span class="here">strat-creator + software engineer</span></div>
+        <div class="st"><span class="n">ST3</span><b>Breakdown</b><span class="d">Task decomposition</span><span class="here">skipped: one Story</span></div>
+      </div></div>
+      <div class="phase"><h3>Phase 02 · Execute</h3><div class="sts">
+        <div class="st on"><span class="n">ST4</span><b>Code &amp; Review</b><span class="d">Code generation and review</span><span class="here">/fs-code → Code, Review, Fix</span></div>
+        <div class="st on"><span class="n">ST5</span><b>Build &amp; Verify</b><span class="d">Assembly and verification</span><span class="here">141/141 tests, typecheck</span></div>
+        <div class="st"><span class="n">ST6</span><b>Deliver</b><span class="d">Release management</span><span class="here">next: human merge</span></div>
+      </div></div>
+      <div class="phase"><h3>Phase 03 · Loop</h3><div class="sts">
+        <div class="st"><span class="n">ST7</span><b>Learn</b><span class="d">Production feedback and improvement</span><span class="here">not in this demo</span></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section id="run">
+  <div class="wrap">
+    <div class="label">The run</div>
+    <h2 class="sec-title">Four videos, one line</h2>
+    <p class="sec-desc">Each station has an agent with one job. Between stations sit gates, where a person reads the work and decides. Watch them in order.</p>
+
+    <ol class="line">
+      <li class="stop">
+        <div class="rail"><span class="dot"></span></div>
+        <div class="stop-body">
+          <div><div class="tag">ST1 Intake · rfe-creator · work type: react-shopping-cart</div><h3>1 · The requirement: what the shopper needs</h3></div>
+          <div class="cols">
+            <div class="txt">
+              <p>rfe-creator turned the business ask into a TSTAPP Story and scored it against the storefront's rubric.</p>
+              <p>It did not wave the Story through. It flagged it for human attention: summary lines were missing color and style, and the thank-you copy claimed the order was being prepared, which this store does not do.</p>
+              <p class="gatebox"><b>Gate.</b> A product manager gave the feature input and answered the open questions before the Story moved on.</p>
+            </div>
+            <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/30rmZFjU_6E" title="fullsend demo 1: RFE creation" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+          </div>
+        </div>
+      </li>
+
+      <li class="stop">
+        <div class="rail"><span class="dot"></span></div>
+        <div class="stop-body">
+          <div><div class="tag">ST2 Solution · strat-creator · work type: react-shopping-cart-strategy</div><h3>2 · The strategy: how to build it</h3></div>
+          <div class="cols">
+            <div class="txt">
+              <p>strat-creator wrote the engineering strategy into <strong>the same Jira Story</strong>, grounded in the storefront's own <code>docs/architecture</code>.</p>
+              <ul>
+                <li>Refined with the PM's answers from the first gate.</li>
+                <li>Scored 8/8 across feasibility, testability, scope and architecture.</li>
+                <li>Four specialist reviewers (feasibility, testability, scope, architecture) each wrote detailed feedback.</li>
+              </ul>
+            </div>
+            <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/wBCBjMAoI3Q" title="fullsend demo 2: strategy create and review" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+          </div>
+        </div>
+      </li>
+
+      <li class="stop gate">
+        <div class="rail"><span class="dot"></span></div>
+        <div class="stop-body">
+          <div><div class="tag">ST2 Solution gate · software engineer · review and push</div><h3>3 · A software engineer shapes the plan and pushes it</h3></div>
+          <div class="cols short">
+            <div class="txt">
+              <p>A software engineer read the reviewers' feedback and folded it into the strategy: focus handling when the summary opens, resetting the view, and the tests that prove both. Then they pushed the strategy back to the Story.</p>
+              <p class="gatebox"><b>Gate.</b> Reviewers advise. The software engineer decides what goes into the plan.</p>
+            </div>
+            <div class="video vertical"><iframe src="https://www.youtube-nocookie.com/embed/AYx44U2eHbI" title="fullsend demo 3: strategy review and push" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+          </div>
+        </div>
+      </li>
+
+      <li class="stop">
+        <div class="rail"><span class="dot"></span></div>
+        <div class="stop-body">
+          <div><div class="tag">ST4 Code &amp; Review · ST5 Build &amp; Verify · triggered by /fs-code</div><h3>4 · The code: a reviewed pull request</h3></div>
+          <div class="cols">
+            <div class="txt">
+              <p>A person typed <code>/fs-code</code> on the Story. <strong>That comment is the sign-off.</strong> fullsend's agents took it from there in the storefront repo:</p>
+              <ul>
+                <li><strong>Code</strong> read the requirement and strategy and opened <a href="https://github.com/fullsend-ai/react-shopping-cart/pull/109" target="_blank" rel="noopener">PR #109</a>.</li>
+                <li><strong>Review</strong> checked it and posted four findings.</li>
+                <li><strong>Fix</strong> resolved all four in one iteration, including updating the architecture docs and tightening the cart tests.</li>
+                <li><strong>Review</strong> ran again and approved. 141/141 tests and the typecheck pass, and it runs locally.</li>
+              </ul>
+              <div class="who">
+                <img src="https://avatars.githubusercontent.com/in/3478495?v=4" alt="">fullsend-ai-coder
+                <img src="https://avatars.githubusercontent.com/in/3478501?v=4" alt="">fullsend-ai-review
+              </div>
+              <p class="gatebox"><b>Gate.</b> A human approved the PR too. Merging stays a human call.</p>
+            </div>
+            <div class="video"><iframe src="https://www.youtube-nocookie.com/embed/ntr4x7RAYFA" title="fullsend demo 4: fs-code code generation" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section id="cast">
+  <div class="wrap">
+    <div class="label">The cast</div>
+    <h2 class="sec-title">Who did what</h2>
+    <p class="sec-desc">fullsend agents share context the way developers do: through the tracker, pull requests and comments. Here is everyone who touched TSTAPP-8.</p>
+    <div class="cast">
+      <div class="actor"><div class="ic">RFE</div><div class="role">station · WHAT</div><div class="nm">rfe-creator</div><p>Writes the requirement, scores it against the product's rubric, and asks a human when something is unclear.</p></div>
+      <div class="actor"><div class="ic">STR</div><div class="role">station · HOW</div><div class="nm">strat-creator</div><p>Writes the engineering strategy, scores it, and runs four specialist reviewers grounded in the product's architecture.</p></div>
+      <div class="actor"><div class="ic"><img src="https://avatars.githubusercontent.com/in/3478495?v=4" alt=""></div><div class="role">agent · code &amp; fix</div><div class="nm">Code / Fix</div><p>Implements the Story as a pull request with tests, then fixes review findings and pushes again.</p></div>
+      <div class="actor"><div class="ic"><img src="https://avatars.githubusercontent.com/in/3478501?v=4" alt=""></div><div class="role">agent · review</div><div class="nm">Review</div><p>Reviews every PR for correctness, security, performance and intent, and posts specific findings.</p></div>
+      <div class="actor human"><div class="ic">PM</div><div class="role">human · requirement gate</div><div class="nm">Product manager</div><p>Gives the feature input and answers the requirement's open questions.</p></div>
+      <div class="actor human"><div class="ic">SE</div><div class="role">human · strategy gate</div><div class="nm">Software engineer</div><p>Reviews the strategy, folds in the reviewers' feedback, types <code>/fs-code</code> to sign off, and approves the merge.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="work-types">
+  <div class="wrap">
+    <div class="label">How a new product plugged in</div>
+    <h2 class="sec-title">Pluggable work types</h2>
+    <div class="wt">
+      <div class="wt-text">
+        <p>rfe-creator and strat-creator are <strong>stations</strong>. Each does one job, and they share one configuration vocabulary. A <strong>work type</strong> tells a station how to do that job for a particular product. It is a descriptor, <code>types/&lt;type&gt;/type.yaml</code>, that binds the station to:</p>
+        <ul class="binds">
+          <li><b>tracker</b><span>where the work lives (here, Stories in TSTAPP)</span></li>
+          <li><b>intake gate</b><span>which items the station picks up, and when</span></li>
+          <li><b>rubric</b><span>what "ready to move on" means for this product</span></li>
+          <li><b>templates</b><span>the shape of the requirement or strategy it writes</span></li>
+          <li><b>architecture context</b><span>the docs it reasons from (here, the store's <code>docs/architecture</code>)</span></li>
+        </ul>
+        <p>The React storefront joined the pipeline by adding two work types. Nobody forked the pipeline or changed the stations' core.</p>
+      </div>
+      <pre class="yaml" aria-label="Sketch of a work type descriptor"><span class="c"># types/&lt;type&gt;/type.yaml  (simplified sketch)</span>
+<span class="k">station:</span>    strat-creator
+<span class="k">tracker:</span>    jira · TSTAPP Story
+<span class="k">intake:</span>     approved requirement on the Story
+<span class="k">rubric:</span>     feasibility · testability
+            scope · architecture
+<span class="k">templates:</span>  strategy section in the Story
+<span class="k">context:</span>    docs/architecture</pre>
+    </div>
+    <div class="pair">
+      <div class="card"><div class="label">WHAT</div><h3><code>react-shopping-cart</code></h3><p class="note">The rfe-creator work type. Writes and scores the shopper-facing requirement as a TSTAPP Story.</p></div>
+      <div class="card"><div class="label">HOW</div><h3><code>react-shopping-cart-strategy</code></h3><p class="note">The strat-creator work type. Writes the strategy into the same Story, so requirement and plan travel together to <code>/fs-code</code>.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="label">Why fullsend</div>
+    <h2 class="sec-title">Humans decide. Agents do the work.</h2>
+    <div class="prin" style="margin-top:28px">
+      <div><h3>Gates are the point</h3><p>The pipeline stops where judgment matters: open questions on a requirement, the final shape of a strategy, the go-ahead to write code, the merge.</p></div>
+      <div><h3>Every step is reviewable</h3><p>Requirements, scores, reviewer feedback and strategies land in Jira. Code lands as a GitHub pull request with tests and an agent review.</p></div>
+      <div><h3>Grounded in your code</h3><p>Strategies are checked against the product's own architecture docs, so the plan fits the codebase it targets.</p></div>
+      <div><h3>New products plug in</h3><p>A work type adapts a station to a new tracker, rubric and architecture. The pipeline stays shared.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="plug">
+      <img src="img/logo.png" alt="fullsend logo">
+      <div>
+        <h2>Put fullsend on your repos</h2>
+        <p>fullsend is open source. It deploys purpose-built agents on GitHub and GitLab that triage, code, review, fix and learn from every run, with your team at the gates.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://fullsend.sh/docs/" target="_blank" rel="noopener">Get Started</a>
+          <a class="btn btn-secondary" href="https://github.com/fullsend-ai/fullsend" target="_blank" rel="noopener">GitHub ↗</a>
+        </div>
+      </div>
+    </div>
+    <ul class="links">
+      <li><a href="https://github.com/fullsend-ai/react-shopping-cart" target="_blank" rel="noopener">fullsend-ai/react-shopping-cart</a><span>the demo storefront</span></li>
+      <li><a href="https://github.com/fullsend-ai/react-shopping-cart/pull/109" target="_blank" rel="noopener">react-shopping-cart#109</a><span>the generated, reviewed pull request</span></li>
+      <li><a href="https://github.com/fullsend-ai/rfe-creator/pull/306" target="_blank" rel="noopener">rfe-creator#306</a><span>the react-shopping-cart work type</span></li>
+      <li><a href="https://github.com/fullsend-ai/strat-creator/pull/106" target="_blank" rel="noopener">strat-creator#106</a><span>strat-creator demo PR</span></li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>fullsend demo · TSTAPP-8 on the React demo storefront</span>
+    <a href="https://fullsend.sh" target="_blank" rel="noopener">fullsend.sh</a>
+  </div>
+</footer>
+
+<script>
+document.getElementById('theme-toggle').addEventListener('click',function(){
+  var r=document.documentElement,t=r.getAttribute('data-theme')==='dark'?'light':'dark';
+  r.setAttribute('data-theme',t);try{localStorage.setItem('theme',t);}catch(e){}
+});
+</script>
+</body>
+</html>

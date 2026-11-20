@@ -179,6 +179,10 @@ export const CartFooter = styled.div`
   z-index: 2;
   background-color: ${({ theme }) => theme.colors.primary};
 
+  &[hidden] {
+    display: none;
+  }
+
   &::before {
     content: '';
     width: 100%;

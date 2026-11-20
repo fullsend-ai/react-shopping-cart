@@ -71,12 +71,19 @@ const useCartProducts = () => {
     updateCartTotal(updatedProducts);
   };
 
+  // Empties the cart, for example after the shopper confirms the order.
+  const clearCart = () => {
+    setProducts([]);
+    updateCartTotal([]);
+  };
+
   return {
     products,
     addProduct,
     removeProduct,
     increaseProductQuantity,
     decreaseProductQuantity,
+    clearCart,
   };
 };
 

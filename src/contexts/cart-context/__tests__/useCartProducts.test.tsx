@@ -154,6 +154,29 @@ describe('[contexts] - cart-context', () => {
       });
     });
 
+    describe('clearCart', () => {
+      afterEach(() => {
+        resetMocks();
+      });
+
+      test('should remove every product and update cartTotal', () => {
+        setupMockUseContext([mockCartProducts[0], mockCartProducts[1]]);
+
+        const mockUpdateCartTotal = jest.fn();
+        jest.spyOn(useCartTotalModule, 'default').mockImplementation(() => ({
+          total: {} as ICartTotal,
+          updateCartTotal: mockUpdateCartTotal,
+        }));
+
+        const { result } = renderHook(() => useCartProducts(), { wrapper });
+
+        expect(products).toHaveLength(2);
+        result.current.clearCart();
+        expect(products).toHaveLength(0);
+        expect(mockUpdateCartTotal).toHaveBeenNthCalledWith(1, []);
+      });
+    });
+
     describe('colors', () => {
       const black: ICartProduct = {
         ...mockCartProducts[0],

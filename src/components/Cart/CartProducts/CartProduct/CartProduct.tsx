@@ -1,5 +1,6 @@
 import formatPrice from 'utils/formatPrice';
 import { colorImage } from 'utils/colorImage';
+import { cartLineDesc } from 'utils/cartLine';
 import { ICartProduct } from 'models';
 
 import { useCart } from 'contexts/cart-context';
@@ -24,9 +25,7 @@ const CartProduct = ({ product }: IProps) => {
     quantity,
   } = product;
 
-  // Size-less products have no first size and may have no style, so join
-  // only the parts that are present (never print "undefined").
-  const desc = [availableSizes[0], color, style].filter(Boolean).join(' | ');
+  const desc = cartLineDesc({ availableSizes, color, style });
   // One product can have several lines (one per color), so the buttons name
   // the line they change.
   const lineName = color ? `${color} ${title}` : title;

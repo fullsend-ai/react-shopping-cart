@@ -55,8 +55,10 @@ src/index.tsx
   empties the cart.
 - **Images.** Product images are WebP files in `src/static/products/`, named by
   SKU and bundled by webpack.
-- **Checkout** is a browser `alert()` showing the subtotal. There is no order,
-  payment or confirmation step.
+- **Checkout** opens an in-page order summary in the cart panel, with a
+  Confirm order step that empties the cart and shows a thank-you message.
+  There is no payment provider or order system. See
+  [`components/cart.md`](components/cart.md#checkout).
 
 ## Where to change things
 

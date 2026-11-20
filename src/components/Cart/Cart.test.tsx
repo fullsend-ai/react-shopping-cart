@@ -87,6 +87,11 @@ describe('[components] - Cart', () => {
 
     const summary = () => screen.getByRole('region', { name: 'Order summary' });
 
+    // The cart footer's Checkout button. Outside the cart view the footer
+    // stays mounted but hidden, so it needs `hidden: true` to be found.
+    const footerCheckout = () =>
+      screen.getByRole('button', { name: 'Checkout', hidden: true });
+
     const openSummary = async () => {
       await userEvent.click(screen.getByRole('button', { name: 'Checkout' }));
       return summary();
@@ -128,6 +133,8 @@ describe('[components] - Cart', () => {
           .getAllByRole('button')
           .map((button) => button.textContent)
       ).toEqual(['Confirm order', 'Back to cart']);
+      // The cart footer (its subtotal and Checkout button) is hidden.
+      expect(footerCheckout()).not.toBeVisible();
       expect(alertSpy).not.toHaveBeenCalled();
     });
 
@@ -236,6 +243,7 @@ describe('[components] - Cart', () => {
       expect(
         screen.queryByRole('button', { name: 'Confirm order' })
       ).not.toBeInTheDocument();
+      expect(footerCheckout()).not.toBeVisible();
 
       // The header badge already shows the emptied cart, and the message
       // stays after the total update.
@@ -276,6 +284,7 @@ describe('[components] - Cart', () => {
       expect(
         screen.queryByRole('button', { name: 'Confirm order' })
       ).not.toBeInTheDocument();
+      expect(footerCheckout()).not.toBeVisible();
       expect(alertSpy).not.toHaveBeenCalled();
     });
 

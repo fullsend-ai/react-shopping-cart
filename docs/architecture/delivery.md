@@ -98,6 +98,11 @@ so a PR that updates `docs/architecture/` is not merged automatically
 today. Widening the allowlist needs an authorizing GitHub issue
 cited in the workflow header (issue #11 and issue #98 are the precedents).
 
+This does not mean docs updates should be deferred. A change that alters
+behavior these docs describe updates them **in the same PR** and is
+human-merged; the PR body says so up front and has no "docs follow-up"
+section ([`AGENTS.md`](../../AGENTS.md#architecture-docs), issue #110).
+
 The merge runs as `github-actions[bot]` with the workflow's `GITHUB_TOKEN`.
 GitHub does not start `push` workflows for commits made with that token, so
 an auto-merged commit gets no push-triggered `security` run. For example,

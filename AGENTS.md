@@ -10,7 +10,10 @@ written or coded, so it must stay current (issue #110).
    docs **in the same PR**. Do this even if the story suggests a separate
    docs PR. This extends the same-PR rule for decision records in
    [`decisions/README.md`](docs/architecture/decisions/README.md) to the
-   whole folder.
+   whole folder. It does not drop that rule's condition: decision records
+   and `constraints.md` still change only when a Jira story explicitly
+   changes the rule. A change that contradicts one without that authority is
+   out of scope, not a docs update.
 2. Such a PR is merged by a person, because `docs/` is not on the auto-merge
    allowlist
    ([`delivery.md`](docs/architecture/delivery.md#auto-merge-rules)). Accept

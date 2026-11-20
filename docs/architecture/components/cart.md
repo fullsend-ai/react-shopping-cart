@@ -95,6 +95,27 @@ charged.
 
 ## Checkout
 
-The Checkout button shows an `alert()` with the subtotal, or "Add some
-product in the cart!" when the cart is empty. There is no checkout flow
-([constraints](../constraints.md#commerce)).
+Checkout stays inside the cart panel (TSTAPP-8). There is no browser
+`alert()`. The panel shows one view at a time:
+
+- **Order summary**
+  ([`CheckoutSummary`](../../../src/components/Cart/CheckoutSummary/CheckoutSummary.tsx)),
+  after Checkout with items in the cart. It lists each line read-only (title,
+  the cart line's `" | "` description, `Quantity: N` and the line price),
+  then the subtotal and installment info, computed the same way as the cart
+  (`src/utils/cartLine.ts`). It has **Confirm order** and **Back to cart**
+  buttons. Quantities are changed in the cart, not here.
+- **Order confirmed**
+  ([`CheckoutMessage`](../../../src/components/Cart/CheckoutMessage/CheckoutMessage.tsx)),
+  after Confirm order. Confirming empties the cart (`clearCart()`) and shows
+  "Order confirmed — great picks!" with a **Keep shopping** link to `/`.
+- **Empty cart** (also `CheckoutMessage`), after Checkout with an empty cart.
+  It shows "Your cart is empty — let's find you something you'll love." with
+  a **Back to the store** link to `/`, and no Confirm order.
+
+The view is not persisted. It goes back to the cart list when the panel
+closes or when a product is added. The cart footer (subtotal and Checkout)
+is hidden outside the cart list view.
+
+Confirm order records nothing: there is no payment, no order and no
+confirmation email ([constraints](../constraints.md#commerce)).

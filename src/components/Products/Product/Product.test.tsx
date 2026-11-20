@@ -5,6 +5,7 @@ import {
   queryAllByAttribute,
   queryByAttribute,
   screen,
+  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithThemeProvider } from 'utils/test/test-utils';
@@ -726,7 +727,11 @@ describe('[components] - Product', () => {
         );
         await userEvent.click(screen.getByRole('button', { name: 'Checkout' }));
 
-        expect(alertSpy).toHaveBeenCalledWith('Checkout - Subtotal: $ 34.95');
+        const summary = screen.getByRole('region', { name: 'Order summary' });
+        expect(within(summary).getAllByRole('listitem')).toHaveLength(1);
+        // The line price and the subtotal.
+        expect(within(summary).getAllByText('$ 34.95')).toHaveLength(2);
+        expect(alertSpy).not.toHaveBeenCalled();
       });
 
       test('should check out with the bottle and apparel in the cart', async () => {
@@ -741,9 +746,12 @@ describe('[components] - Product', () => {
         await userEvent.click(bottleButton);
         await userEvent.click(screen.getByRole('button', { name: 'Checkout' }));
 
-        expect(alertSpy).toHaveBeenCalledWith(
-          `Checkout - Subtotal: $ ${(apparel.price + 34.95).toFixed(2)}`
-        );
+        const summary = screen.getByRole('region', { name: 'Order summary' });
+        expect(within(summary).getAllByRole('listitem')).toHaveLength(2);
+        expect(
+          within(summary).getByText(`$ ${(apparel.price + 34.95).toFixed(2)}`)
+        ).toBeInTheDocument();
+        expect(alertSpy).not.toHaveBeenCalled();
       });
     });
   });

@@ -24,7 +24,7 @@ triage agent ── comments on the story: open questions, then "ready", test ca
   │ a person comments /fs-code (or /fs-code <instruction>)
   ▼
 code agent (fullsend-ai-coder[bot]) ── opens a PR "feat(TSTAPP-N): …", posts the link on the story
-  │ pull_request_target → fullsend.yaml
+  │ pull_request → fullsend.yaml
   ▼
 review agent (fullsend-ai-review[bot]) ── approves or requests changes
   │ changes requested → fix agent pushes commits → review again
@@ -50,8 +50,8 @@ main  (no deploy)
 
 | Workflow                 | Trigger                                                                | What it does                                                                                                                                                                                 |
 | ------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fullsend.yaml`          | issues, `/fs-*` comments, `pull_request_target`, PR reviews            | Routes the event to fullsend's `reusable-dispatch.yml` (pinned to v0.56.1), which runs the triage, code, review or fix agent. Also handles `/fs-fix-stop`. Managed by fullsend: do not edit. |
-| `fullsend-poll-jira.yml` | cron `2,7,…,57 * * * *`, manual                                        | Polls Jira (site and project from `.fullsend/config.yaml`) and dispatches the agents for new `/fs-*` commands.                                                                               |
+| `fullsend.yaml`          | issues, `/fs-*` comments, `pull_request`, PR reviews                   | Routes the event to fullsend's `reusable-dispatch.yml` (pinned to v0.57.1), which runs the triage, code, review or fix agent. Also handles `/fs-fix-stop`. Managed by fullsend: do not edit. |
+| `fullsend-poll-jira.yml` | cron `2,7,…,57 * * * *`, manual                                        | Polls Jira (site and project from `.fullsend/config.yaml`) and dispatches the agents for new `/fs-*` commands. Poll and dispatch both use fullsend v0.57.1.                                  |
 | `auto-merge.yml`         | `pull_request_review` submitted; `pull_request` labeled                | Merges approved agent PRs after handling low findings; reports failures and reconciles late ready labels (rules below).                                                                      |
 | `auto-merge-tests.yml`   | PRs and pushes to `main` changing the auto-merge workflow or its tests | Runs merge behavior/dispatch tests and actionlint with a read-only token and no secrets.                                                                                                     |
 | `prioritize.yml`         | `workflow_dispatch` only                                               | Fullsend RICE scoring into a GitHub Project. Managed by fullsend.                                                                                                                            |
@@ -59,6 +59,12 @@ main  (no deploy)
 
 Dependabot (`.github/dependabot.yml`) opens npm and Actions updates monthly.
 Its ignore rules hold TypeScript at 4.9 ([`AGENTS.md`](../../AGENTS.md)).
+The fullsend dispatcher skips fork PRs and Dependabot-triggered
+`pull_request` runs. Dependabot runs receive Dependabot secrets instead of
+Actions secrets, so a maintainer must comment `/fs-review` to start a review
+through the authorized base-branch `issue_comment` path. Repeating that
+command after new commits requests another review; rerunning the original
+Dependabot workflow does not change its credential restrictions.
 
 ## Checks a PR must pass
 

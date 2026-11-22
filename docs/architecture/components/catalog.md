@@ -55,9 +55,9 @@ An optional field, like `availableColors` or `colorImages`, leaves existing
 entries and mocks valid.
 
 `isFreeShipping` and `installments` have no fixed default: take them from the
-story. The TSTAPP products so far (TSTAPP-2, TSTAPP-3, TSTAPP-4) used
-`isFreeShipping: true` and `installments: 0`; the earlier Red Hat AI Black
-T-Shirt (#21) uses `installments: 9`.
+story. Every TSTAPP product so far has used `isFreeShipping: true` and
+`installments: 0`; the earlier Red Hat AI Black T-Shirt (#21) uses
+`installments: 9`.
 
 ## Id and SKU rules
 

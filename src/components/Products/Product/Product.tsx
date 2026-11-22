@@ -1,6 +1,7 @@
-import { KeyboardEvent } from 'react';
+import { KeyboardEvent, useState } from 'react';
 
 import formatPrice from 'utils/formatPrice';
+import { cardImages } from 'utils/colorImage';
 import { IProduct } from 'models';
 
 import { useCart } from 'contexts/cart-context';
@@ -14,6 +15,7 @@ interface IProps {
 const Product = ({ product }: IProps) => {
   const { openCart, addProduct } = useCart();
   const {
+    id,
     sku,
     title,
     price,
@@ -21,7 +23,14 @@ const Product = ({ product }: IProps) => {
     currencyId,
     currencyFormat,
     isFreeShipping,
+    availableColors,
   } = product;
+
+  const [color, setColor] = useState<string>();
+  const hasColors = !!availableColors?.length;
+  const needsColor = hasColors && !color;
+  const colorHintId = `product-${id}-color-hint`;
+  const { front: frontImage, hover: hoverImage } = cardImages(product, color);
 
   const formattedPrice = formatPrice(price, currencyId);
   let productInstallment;
@@ -41,22 +50,70 @@ const Product = ({ product }: IProps) => {
   }
 
   const handleAddProduct = () => {
-    addProduct({ ...product, quantity: 1 });
+    if (needsColor) return;
+
+    addProduct(
+      hasColors
+        ? { ...product, color, quantity: 1 }
+        : { ...product, quantity: 1 }
+    );
     openCart();
   };
 
   const handleAddProductWhenEnter = (event: KeyboardEvent) => {
     if (event.key === 'Enter' || event.code === 'Space') {
-      addProduct({ ...product, quantity: 1 });
-      openCart();
+      handleAddProduct();
     }
   };
 
+  // Keys pressed on the color radios (arrows, Space, Enter) choose a color
+  // only: they must not reach the card, which adds to the cart on key up.
+  const handleColorPickerKeyUp = (event: KeyboardEvent) =>
+    event.stopPropagation();
+
   return (
-    <S.Container onKeyUp={handleAddProductWhenEnter} $sku={sku} tabIndex={1}>
+    <S.Container
+      onKeyUp={handleAddProductWhenEnter}
+      $sku={sku}
+      $frontImage={frontImage}
+      $hoverImage={hoverImage}
+      tabIndex={1}
+    >
       {isFreeShipping && <S.Stopper>Free shipping</S.Stopper>}
       <S.Image alt={title} />
       <S.Title>{title}</S.Title>
+      {hasColors && (
+        <S.ColorPicker
+          onKeyUp={handleColorPickerKeyUp}
+          aria-describedby={needsColor ? colorHintId : undefined}
+        >
+          <legend>Color</legend>
+          {availableColors?.map((option) => (
+            <S.ColorOption key={option}>
+              <input
+                type="radio"
+                // Same tabIndex as the card, so the browser visits the radios
+                // right after their own card (DOM order) rather than after
+                // every card on the page: Shift+Tab goes back to this card.
+                tabIndex={1}
+                name={`product-${id}-color`}
+                value={option}
+                checked={color === option}
+                onChange={() => setColor(option)}
+              />
+              {option}
+            </S.ColorOption>
+          ))}
+        </S.ColorPicker>
+      )}
+      {hasColors && (
+        // Announces the choice: "Add to cart" becomes enabled and the hint
+        // goes away, which a screen reader on the radio would not notice.
+        <S.ColorStatus role="status" aria-live="polite">
+          {color ? `${color} chosen. You can add to cart.` : ''}
+        </S.ColorStatus>
+      )}
+      {needsColor && <S.ColorHint id={colorHintId}>Choose a color</S.ColorHint>}
       <S.Price>
         <S.Val>
           <small>{currencyFormat}</small>
@@ -65,7 +122,12 @@ const Product = ({ product }: IProps) => {
         </S.Val>
         {productInstallment}
       </S.Price>
-      <S.BuyButton onClick={handleAddProduct} tabIndex={-1}>
+      <S.BuyButton
+        onClick={handleAddProduct}
+        tabIndex={-1}
+        disabled={needsColor}
+        aria-describedby={needsColor ? colorHintId : undefined}
+      >
         Add to cart
       </S.BuyButton>
     </S.Container>

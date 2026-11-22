@@ -12,8 +12,9 @@ Object {
           class="sc-bdnzMm hUurVR"
         >
           <button
+            aria-label="Remove Cropped Stay Groovy off white from cart"
             class="sc-jSFiLV hNjazs"
-            title="remove product from cart"
+            title="Remove Cropped Stay Groovy off white from cart"
           />
           <img
             alt="Cropped Stay Groovy off white"
@@ -46,12 +47,14 @@ Object {
             </p>
             <div>
               <button
+                aria-label="Decrease Cropped Stay Groovy off white quantity"
                 class="sc-gKzZKs buzwOr"
                 disabled=""
               >
                 -
               </button>
               <button
+                aria-label="Increase Cropped Stay Groovy off white quantity"
                 class="sc-gKzZKs buzwOr"
               >
                 +
@@ -63,8 +66,9 @@ Object {
           class="sc-bdnzMm hUurVR"
         >
           <button
+            aria-label="Remove Basic Cactus White T-shirt from cart"
             class="sc-jSFiLV hNjazs"
-            title="remove product from cart"
+            title="Remove Basic Cactus White T-shirt from cart"
           />
           <img
             alt="Basic Cactus White T-shirt"
@@ -97,12 +101,14 @@ Object {
             </p>
             <div>
               <button
+                aria-label="Decrease Basic Cactus White T-shirt quantity"
                 class="sc-gKzZKs buzwOr"
                 disabled=""
               >
                 -
               </button>
               <button
+                aria-label="Increase Basic Cactus White T-shirt quantity"
                 class="sc-gKzZKs buzwOr"
               >
                 +
@@ -114,8 +120,9 @@ Object {
           class="sc-bdnzMm hUurVR"
         >
           <button
+            aria-label="Remove Skater Black Sweatshirt from cart"
             class="sc-jSFiLV hNjazs"
-            title="remove product from cart"
+            title="Remove Skater Black Sweatshirt from cart"
           />
           <img
             alt="Skater Black Sweatshirt"
@@ -148,12 +155,14 @@ Object {
             </p>
             <div>
               <button
+                aria-label="Decrease Skater Black Sweatshirt quantity"
                 class="sc-gKzZKs buzwOr"
                 disabled=""
               >
                 -
               </button>
               <button
+                aria-label="Increase Skater Black Sweatshirt quantity"
                 class="sc-gKzZKs buzwOr"
               >
                 +
@@ -172,8 +181,9 @@ Object {
         class="sc-bdnzMm hUurVR"
       >
         <button
+          aria-label="Remove Cropped Stay Groovy off white from cart"
           class="sc-jSFiLV hNjazs"
-          title="remove product from cart"
+          title="Remove Cropped Stay Groovy off white from cart"
         />
         <img
           alt="Cropped Stay Groovy off white"
@@ -206,12 +216,14 @@ Object {
           </p>
           <div>
             <button
+              aria-label="Decrease Cropped Stay Groovy off white quantity"
               class="sc-gKzZKs buzwOr"
               disabled=""
             >
               -
             </button>
             <button
+              aria-label="Increase Cropped Stay Groovy off white quantity"
               class="sc-gKzZKs buzwOr"
             >
               +
@@ -223,8 +235,9 @@ Object {
         class="sc-bdnzMm hUurVR"
       >
         <button
+          aria-label="Remove Basic Cactus White T-shirt from cart"
           class="sc-jSFiLV hNjazs"
-          title="remove product from cart"
+          title="Remove Basic Cactus White T-shirt from cart"
         />
         <img
           alt="Basic Cactus White T-shirt"
@@ -257,12 +270,14 @@ Object {
           </p>
           <div>
             <button
+              aria-label="Decrease Basic Cactus White T-shirt quantity"
               class="sc-gKzZKs buzwOr"
               disabled=""
             >
               -
             </button>
             <button
+              aria-label="Increase Basic Cactus White T-shirt quantity"
               class="sc-gKzZKs buzwOr"
             >
               +
@@ -274,8 +289,9 @@ Object {
         class="sc-bdnzMm hUurVR"
       >
         <button
+          aria-label="Remove Skater Black Sweatshirt from cart"
           class="sc-jSFiLV hNjazs"
-          title="remove product from cart"
+          title="Remove Skater Black Sweatshirt from cart"
         />
         <img
           alt="Skater Black Sweatshirt"
@@ -308,12 +324,14 @@ Object {
           </p>
           <div>
             <button
+              aria-label="Decrease Skater Black Sweatshirt quantity"
               class="sc-gKzZKs buzwOr"
               disabled=""
             >
               -
             </button>
             <button
+              aria-label="Increase Skater Black Sweatshirt quantity"
               class="sc-gKzZKs buzwOr"
             >
               +

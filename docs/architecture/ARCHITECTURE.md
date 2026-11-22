@@ -55,19 +55,21 @@ src/index.tsx
   empties the cart.
 - **Images.** Product images are WebP files in `src/static/products/`, named by
   SKU and bundled by webpack.
-- **Checkout** is a browser `alert()` showing the subtotal. There is no order,
-  payment or confirmation step.
+- **Checkout** opens an in-page order summary in the cart panel, with a
+  Confirm order step that empties the cart and shows a thank-you message.
+  There is no payment provider or order system. See
+  [`components/cart.md`](components/cart.md#checkout).
 
 ## Where to change things
 
-| To change...            | Edit                                                                                                             |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Add or edit a product   | `src/static/json/products.json` + 3 images in `src/static/products/`                                             |
-| Product data shape      | `src/models/index.ts` (`IProduct`)                                                                               |
-| Filter options or logic | `src/components/Filter/Filter.tsx`, `src/contexts/products-context/useProducts.tsx`, `src/utils/matchesBrand.ts` |
-| Product card            | `src/components/Products/Product/`                                                                               |
-| Cart line, subtotal     | `src/components/Cart/`, `src/contexts/cart-context/`                                                             |
-| Price formatting        | `src/utils/formatPrice.ts`                                                                                       |
+| To change...            | Edit                                                                                                                                                                                                                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Add or edit a product   | `src/static/json/products.json` + 3 images in `src/static/products/`. A product with `colorImages` also needs `{sku}-N-product.webp` and `{sku}-N-cart.webp` for every image number N it maps. See [product images](components/catalog.md#product-images). |
+| Product data shape      | `src/models/index.ts` (`IProduct`)                                                                                                                                                                                                                         |
+| Filter options or logic | `src/components/Filter/Filter.tsx`, `src/contexts/products-context/useProducts.tsx`, `src/utils/matchesBrand.ts`                                                                                                                                           |
+| Product card            | `src/components/Products/Product/`                                                                                                                                                                                                                         |
+| Cart line, subtotal     | `src/components/Cart/`, `src/contexts/cart-context/`                                                                                                                                                                                                       |
+| Price formatting        | `src/utils/formatPrice.ts`                                                                                                                                                                                                                                 |
 
 ## Validation
 

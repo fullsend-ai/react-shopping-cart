@@ -132,6 +132,8 @@ describe('[components] - Filter', () => {
 
   describe('Black & Red Contrast Hoodie', () => {
     const title = 'Black & Red Contrast Hoodie';
+  describe('Hydro Flask 21 oz Standard Mouth water bottle', () => {
+    const title = 'Hydro Flask 21 oz Standard Mouth water bottle';
 
     const ProductTitles = () => {
       const { products } = useProducts();
@@ -172,6 +174,24 @@ describe('[components] - Filter', () => {
           await screen.findByText('Red Hat AI Black T-Shirt')
         ).toBeInTheDocument();
         expect(screen.queryByText(title)).not.toBeInTheDocument();
+    test.each([[['S']], [['S', 'XL']], [['S', 'Red Hat']], [['Red Hat']]])(
+      'should show the bottle when filtering by %p',
+      async (labels) => {
+        renderWithThemeProvider(
+          <ProductsProvider>
+            <Filter />
+            <ProductTitles />
+          </ProductsProvider>
+        );
+
+        for (const label of labels) {
+          await userEvent.click(screen.getByLabelText(label));
+        }
+        expect(await screen.findByText(title)).toBeInTheDocument();
+        // Apparel without the selected sizes or brand is still filtered out.
+        expect(
+          screen.queryByText('Black Tule Oversized')
+        ).not.toBeInTheDocument();
       }
     );
   });

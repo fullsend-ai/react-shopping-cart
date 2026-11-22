@@ -1,4 +1,6 @@
 import formatPrice from 'utils/formatPrice';
+import { colorImage } from 'utils/colorImage';
+import { cartLineDesc } from 'utils/cartLine';
 import { ICartProduct } from 'models';
 
 import { useCart } from 'contexts/cart-context';
@@ -19,8 +21,16 @@ const CartProduct = ({ product }: IProps) => {
     currencyId,
     currencyFormat,
     availableSizes,
+    color,
     quantity,
   } = product;
+
+  const desc = cartLineDesc({ availableSizes, color, style });
+  // One product can have several lines (one per color), so the buttons name
+  // the line they change.
+  const lineName = color ? `${color} ${title}` : title;
+  // The thumbnail follows the line's color; otherwise it is image 1.
+  const image = colorImage(product, color) ?? 1;
 
   const handleRemoveProduct = () => removeProduct(product);
   const handleIncreaseProductQuantity = () => increaseProductQuantity(product);
@@ -30,16 +40,17 @@ const CartProduct = ({ product }: IProps) => {
     <S.Container>
       <S.DeleteButton
         onClick={handleRemoveProduct}
-        title="remove product from cart"
+        title={`Remove ${lineName} from cart`}
+        aria-label={`Remove ${lineName} from cart`}
       />
       <S.Image
-        src={require(`static/products/${sku}-1-cart.webp`)}
+        src={require(`static/products/${sku}-${image}-cart.webp`)}
         alt={title}
       />
       <S.Details>
         <S.Title>{title}</S.Title>
         <S.Desc>
-          {`${availableSizes[0]} | ${style}`} <br />
+          {desc} <br />
           Quantity: {quantity}
         </S.Desc>
       </S.Details>
@@ -49,10 +60,14 @@ const CartProduct = ({ product }: IProps) => {
           <S.ChangeQuantity
             onClick={handleDecreaseProductQuantity}
             disabled={quantity === 1 ? true : false}
+            aria-label={`Decrease ${lineName} quantity`}
           >
             -
           </S.ChangeQuantity>
-          <S.ChangeQuantity onClick={handleIncreaseProductQuantity}>
+          <S.ChangeQuantity
+            onClick={handleIncreaseProductQuantity}
+            aria-label={`Increase ${lineName} quantity`}
+          >
             +
           </S.ChangeQuantity>
         </div>

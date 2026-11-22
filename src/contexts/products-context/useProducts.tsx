@@ -5,9 +5,12 @@ import { IProduct } from 'models';
 import { getProducts } from 'services/products';
 import matchesBrand from 'utils/matchesBrand';
 
+// A product with no sizes (availableSizes: []) is listed under any size
+// selection (decision 0004).
 const matchesSizes = (product: IProduct, sizes: string[]) =>
   !sizes ||
   sizes.length === 0 ||
+  product.availableSizes.length === 0 ||
   sizes.some((filter: string) =>
     product.availableSizes.some((size: string) => size === filter)
   );

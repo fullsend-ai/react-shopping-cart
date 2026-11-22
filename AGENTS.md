@@ -101,9 +101,10 @@ npm run build
 CI=true npm test
 ```
 
-The repo has no build/test CI (#7, #36). The `security` workflow only runs a
-secret scan and `npm audit`, so a green `security` check does not mean the
-build passed.
+The repo has no application build/test CI (#7, #36). Merge-workflow tests
+run separately in `.github/workflows/auto-merge-tests.yml`. The `security`
+workflow only runs a secret scan and `npm audit`, so a green `security`
+check does not mean the build passed.
 
 ### Exit condition
 

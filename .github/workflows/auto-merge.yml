@@ -8,9 +8,8 @@
 #      a non-draft coder-bot PR (the `if:` below).
 #   2. Human veto: the merge aborts if any reviewer's latest opinionated
 #      review (COMMENTED/PENDING excluded) is CHANGES_REQUESTED — or
-#      DISMISSED, which also vetoes: without branch protection, any
-#      pull-requests:write token can dismiss a review, so a dismissal is
-#      not trusted as a human override (fail-closed).
+#      DISMISSED, which also vetoes: a dismissal is not trusted as a
+#      human override, even with the active ruleset (fail-closed).
 #   3. Commit binding: --match-head-commit merges only the exact commit
 #      the review approved.
 #   4. Path allowlist + structural denylist: every changed path (old and
@@ -22,6 +21,13 @@
 #      (CLAUDE.md, CLAUDE.local.md, AGENTS.md, GEMINI.md) — those
 #      persistently steer later agent runs. Everything else requires a
 #      human merge.
+#   5. Review threads: after the guards above, resolve only threads whose
+#      complete comment list is from the review bot and every comment starts
+#      with a finding marker and exact **[low]** severity. Re-query; any
+#      unresolved thread requires a human to resolve it and merge.
+#   6. Failure reporting: one comment per reviewed head, updated on retries,
+#      names the failed guard; remove ready-for-merge. A later successful
+#      retry supersedes that failure marker and records the merge.
 # All guards capture their API output first, so an API failure aborts
 # the job (fail-closed) rather than skipping the check.
 #
@@ -35,7 +41,12 @@
 # is a workflow_run relay that runs the merge decision from
 # default-branch code.
 #
-# Branch protection is not configured; the controls do not depend on it.
+# The active default-branch ruleset requires review-thread resolution and
+# code-owner approval (currently no CODEOWNERS file). GitHub still enforces
+# those rules at merge time. Issue #104 authorizes low-finding resolution
+# and pull-requests: read -> write for resolving threads and reporting.
+# Accepted demo risk: a finding incorrectly tagged low can merge without
+# human attention. All other threads remain human-gated; no ruleset bypass.
 # Initial guard authorized by issue #11; the root firebase.json allowance
 # extends it for PR #74; the root README.md allowance is authorized by
 # issue #98, which records its scope, accepted risk and exit condition.
@@ -47,12 +58,11 @@ name: merge agent PRs on clean review
 on:
   pull_request_review:
     types: [submitted]
+  # The review producer adds this label after it submits the approval.
+  pull_request:
+    types: [labeled]
 
 permissions: {}
-
-concurrency:
-  group: merge-agent-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
 
 jobs:
   merge-on-clean-review:
@@ -60,10 +70,16 @@ jobs:
     # by the fullsend coder bot. Every fresh approval retries the merge,
     # which also covers the review -> fix -> re-review loop.
     if: >-
-      github.event.review.user.login == 'fullsend-ai-review[bot]'
+      github.event_name == 'pull_request_review'
+      && github.event.review.user.login == 'fullsend-ai-review[bot]'
       && github.event.review.state == 'approved'
       && github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
       && !github.event.pull_request.draft
+    # Job eligibility is evaluated before job-level concurrency. Skipped
+    # reviews/labels must not displace pending work (even with cancel:false).
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-review
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     # A job-level permissions block sets every unlisted scope to none. The
     # squash-merge runs as github-actions[bot], and GitHub performs
@@ -72,10 +88,11 @@ jobs:
     # with no error and no timeline event (issue #17).
     permissions:
       contents: write
-      pull-requests: read
+      pull-requests: write
       issues: write
     steps:
       - name: Merge the approved commit
+        id: merge
         env:
           GH_TOKEN: ${{ github.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
@@ -84,66 +101,283 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Static reasons only: untrusted API text must not become workflow
+          # commands or inject extra GITHUB_OUTPUT records.
+          reason="Head tie: could not read the PR head; API failure."
+          trap 'status=$?; if [ "$status" -ne 0 ]; then printf "reason=%s\n" "$reason" >> "$GITHUB_OUTPUT"; fi' EXIT
+          fail() {
+            reason=$1
+            echo "::error::$reason"
+            exit 1
+          }
+
           # Control 0 — head tie: read files and reviews only for the
           # reviewed commit. If the head moved, fail; the next approval
           # retries on the new head.
           head_oid=$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)
           if [ "$head_oid" != "$REVIEW_SHA" ]; then
-            echo "::error::PR head ($head_oid) is not the reviewed commit ($REVIEW_SHA); not merging."
-            exit 1
+            fail "Head tie: the PR head is not the reviewed commit; a fresh approval is required."
           fi
 
           # Control 2 — human veto. Latest opinionated review per author
           # (COMMENTED/PENDING excluded); CHANGES_REQUESTED and DISMISSED
           # both veto. Captured first: an API failure aborts the job.
+          reason="Human veto: could not read reviews; API failure."
           vetoes=$(gh pr view "$PR_URL" --json reviews --jq '
             [.reviews[] | select(.state != "COMMENTED" and .state != "PENDING")]
             | group_by(.author.login) | map(last)
             | .[] | select(.state == "CHANGES_REQUESTED" or .state == "DISMISSED") | .author.login')
           if [ -n "$vetoes" ]; then
-            echo "::error::A reviewer's latest review is CHANGES_REQUESTED or DISMISSED; a human veto outranks the bot approval. Not merging."
-            exit 1
+            fail "Human veto: a reviewer's latest opinionated review is CHANGES_REQUESTED or DISMISSED; a human must intervene."
           fi
 
           # Control 4 — path allowlist + structural denylist. Old and new
           # names; the expected count is read from the API and validated
           # (all digits) before use, so a missing value refuses the merge
           # instead of silently skipping the check.
+          reason="Path guard: could not read changed paths or their count; API failure."
           fnames=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[].filename')
           pnames=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --jq '.[] | .previous_filename // empty')
           if [ -z "$fnames" ]; then
-            echo "::error::Could not read the PR's changed files; refusing to merge."
-            exit 1
+            fail "Path guard: could not read changed files; refusing to merge."
           fi
           count=$(grep -c . <<<"$fnames")
           expected=$(gh pr view "$PR_URL" --json changedFiles --jq .changedFiles)
           case "$expected" in
             ''|*[!0-9]*)
-              echo "::error::Could not read the PR's changed-file count; refusing to merge."
-              exit 1
+              fail "Path guard: invalid changed-file count; refusing to merge."
               ;;
           esac
           if [ "$count" -ge 3000 ] || [ "$count" -ne "$expected" ]; then
-            echo "::error::File list incomplete (read ${count}, PR reports ${expected}); refusing to merge."
-            exit 1
+            fail "Path guard: file list incomplete or at the API cap; refusing to merge."
           fi
           for list in "$fnames" "$pnames"; do
             if [ -z "$list" ]; then
               continue
             fi
             if grep -qvE '^src/|^public/|^firebase\.json$|^README\.md$' <<<"$list"; then
-              echo "::error::PR changes paths outside src/, public/, root firebase.json, and root README.md; a human must merge it. Not merging."
-              exit 1
+              fail "Path guard: changes outside src/, public/, root firebase.json, or root README.md; a human must merge."
             fi
             if grep -qE '(^|/)\.' <<<"$list"; then
-              echo "::error::PR adds or renames dot-prefixed files or directories; a human must merge it. Not merging."
-              exit 1
+              fail "Path guard: dot-prefixed files or directories; a human must merge."
             fi
             if grep -qiE '(^|/)(CLAUDE|AGENTS|GEMINI)(\.local)?\.md$' <<<"$list"; then
-              echo "::error::PR adds or renames agent instruction files; a human must merge it. Not merging."
-              exit 1
+              fail "Path guard: agent instruction files; a human must merge."
             fi
           done
 
-          # Control 3 — merge only the exact approved commit.
+          # Control 5 — mutation is allowed only after all existing guards.
+          # Recheck the head now that the path/review API calls are done.
+          reason="Head tie: could not recheck the PR head before resolving threads."
+          head_oid=$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)
+          if [ "$head_oid" != "$REVIEW_SHA" ]; then
+            fail "Head tie: the head moved during checks; no threads resolved."
+          fi
+
+          # shellcheck disable=SC2016 # GraphQL variables, not shell variables.
+          thread_query='query($owner:String!, $name:String!, $number:Int!) {
+            repository(owner:$owner, name:$name) {
+              pullRequest(number:$number) {
+                headRefOid
+                reviewThreads(first:100) {
+                  totalCount pageInfo { hasNextPage }
+                  nodes {
+                    id isResolved viewerCanResolve
+                    comments(first:100) {
+                      totalCount pageInfo { hasNextPage }
+                      nodes { author { login __typename } body }
+                    }
+                  }
+                }
+              }
+            }
+          }'
+          read_threads() {
+            local response
+            response=$(gh api graphql -f query="$thread_query" \
+              -f owner="${GITHUB_REPOSITORY%/*}" -f name="${GITHUB_REPOSITORY#*/}" \
+              -F number="$PR_NUMBER") || return 1
+            # Reject GraphQL partial errors, missing/malformed data, or a
+            # truncated connection before deriving any mutation candidates.
+            jq -e --arg sha "$REVIEW_SHA" '
+              select((.errors // [] | length) == 0)
+              | .data.repository.pullRequest
+              | select(.headRefOid == $sha)
+              | .reviewThreads
+              | select((.nodes | type) == "array"
+                  and .pageInfo.hasNextPage == false
+                  and .totalCount == (.nodes | length)
+                  and .totalCount <= 100)
+              | select(all(.nodes[];
+                  (.id | type == "string" and length > 0)
+                  and (.isResolved | type) == "boolean"))
+            ' <<<"$response"
+          }
+          reason="Review threads: API error, moved head, malformed data, or more than 100 threads; refusing to merge."
+          threads=$(read_threads)
+          candidates=$(jq -r '
+            .nodes[] | select(.isResolved == false)
+            | select(.comments | type == "object")
+            | select(.comments.nodes | type == "array")
+            | select(.comments.pageInfo.hasNextPage == false
+                and .comments.totalCount > 0 and .comments.totalCount <= 100
+                and .comments.totalCount == (.comments.nodes | length))
+            | select(all(.comments.nodes[];
+                .author.login == "fullsend-ai-review"
+                and .author.__typename == "Bot"
+                and (.body | type) == "string"
+                and (.body | test("^<!-- finding:f_[A-Za-z0-9]+ -->\\r?\\n\\*\\*\\[low\\]\\*\\* [^\\r\\n]+(\\r?\\n|$)"))))
+            | .id
+          ' <<<"$threads")
+          while IFS= read -r thread_id; do
+            [ -n "$thread_id" ] || continue
+            reason="Low-finding resolution failed; a human must resolve the review thread and merge."
+            # shellcheck disable=SC2016 # GraphQL variables.
+            result=$(gh api graphql -f thread_id="$thread_id" -f query='
+              mutation($thread_id:ID!) {
+                resolveReviewThread(input:{threadId:$thread_id}) {
+                  thread { id isResolved }
+                }
+              }')
+            jq -e --arg id "$thread_id" '
+              (.errors // [] | length) == 0
+              and .data.resolveReviewThread.thread.id == $id
+              and .data.resolveReviewThread.thread.isResolved == true
+            ' <<<"$result" >/dev/null
+          done <<<"$candidates"
+
+          reason="Review threads: could not verify resolution; API error, moved head, or incomplete data."
+          threads=$(read_threads)
+          if jq -e 'any(.nodes[]; .isResolved == false)' <<<"$threads" >/dev/null; then
+            fail "Unresolved review threads remain; a human must resolve them and merge. Only review-agent low findings are auto-resolved."
+          fi
+
+          # Control 3 — merge only the exact approved commit. GitHub remains
+          # the final authority for ruleset requirements and concurrent edits.
+          reason="Merge failed after the guards passed; see the workflow log for the GitHub policy or API error."
           gh pr merge --squash --match-head-commit "$REVIEW_SHA" "$PR_URL"
+
+      - name: Report why auto-merge failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEW_SHA: ${{ github.event.review.commit_id }}
+          FAILURE_REASON: ${{ steps.merge.outputs.reason }}
+        run: |
+          set -euo pipefail
+          # Remove the label AFTER publishing the marker, including on an
+          # API failure. A label event racing before the marker is covered
+          # by this final removal; a later event can see the marker itself.
+          # Preserve reporting failures and surface label-removal failures.
+          remove_ready_label() {
+            local response
+            if response=$(gh api --method DELETE --include "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels/ready-for-merge"); then
+              return 0
+            fi
+            # Only a missing label is idempotent success; permission, rate
+            # limit and service failures must remain visible failures.
+            if grep -qE '^HTTP/[0-9.]+ 404([[:space:]]|$)' <<<"$response"; then
+              return 0
+            fi
+            return 1
+          }
+          trap 'status=$?; remove_ready_label || status=1; exit "$status"' EXIT
+          marker="<!-- auto-merge-guard:${REVIEW_SHA} -->"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # shellcheck disable=SC2016 # Literal Markdown backticks.
+          body=$(printf '%s\nAuto-merge declined for commit `%s`.\n\n%s\n\nA human must merge or the PR must be changed and approved again.\n\n[Workflow run](%s)' \
+            "$marker" "$REVIEW_SHA" "${FAILURE_REASON:-Auto-merge aborted unexpectedly; see the workflow log.}" "$run_url")
+          # Serialize via the existing per-PR concurrency group. Never edit
+          # another actor's comment, even if it copies the marker.
+          comments=$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments")
+          comment_id=$(jq -r --arg marker "$marker" '
+            if type != "array" or any(.[]; type != "array") then error("Invalid comments response") else
+              [.[][] | select(.user.login == "github-actions[bot]" and .user.type == "Bot")
+                | select((.body | split("\n")[0]) == $marker)]
+              | first | .id // empty
+            end
+          ' <<<"$comments")
+          if [ -n "$comment_id" ]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" -f body="$body"
+          else
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" -f body="$body"
+          fi
+
+      - name: Record a successful retry
+        if: steps.merge.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEW_SHA: ${{ github.event.review.commit_id }}
+        run: |
+          set -euo pipefail
+          marker="<!-- auto-merge-guard:${REVIEW_SHA} -->"
+          comments=$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments")
+          comment_id=$(jq -r --arg marker "$marker" '
+            if type != "array" or any(.[]; type != "array") then error("Invalid comments response") else
+              [.[][] | select(.user.login == "github-actions[bot]" and .user.type == "Bot")
+                | select((.body | split("\n")[0]) == $marker)]
+              | first | .id // empty
+            end
+          ' <<<"$comments")
+          if [ -n "$comment_id" ]; then
+            run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            # shellcheck disable=SC2016 # Literal Markdown backticks.
+            body=$(printf '<!-- auto-merge-complete:%s -->\nAuto-merge succeeded for commit `%s` after a previous refusal.\n\n[Workflow run](%s)' \
+              "$REVIEW_SHA" "$REVIEW_SHA" "$run_url")
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" -f body="$body"
+          fi
+
+  clear-late-ready-label:
+    # App-token label events may arrive after the failure reporter finished.
+    # This path never resolves threads or merges; it reconciles labels only.
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.action == 'labeled'
+      && github.event.label.name == 'ready-for-merge'
+      && github.actor == 'fullsend-ai-review[bot]'
+      && github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-ready-label
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      issues: write
+    steps:
+      - name: Remove a late ready label for a failed head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          remove_ready_label() {
+            local response
+            if response=$(gh api --method DELETE --include "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels/ready-for-merge"); then
+              return 0
+            fi
+            # Only a missing label is idempotent success; permission, rate
+            # limit and service failures must remain visible failures.
+            if grep -qE '^HTTP/[0-9.]+ 404([[:space:]]|$)' <<<"$response"; then
+              return 0
+            fi
+            return 1
+          }
+          head_oid=$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)
+          marker="<!-- auto-merge-guard:${head_oid} -->"
+          comments=$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments")
+          failed=$(jq -r --arg marker "$marker" '
+            if type != "array" or any(.[]; type != "array") then error("Invalid comments response") else
+              any(.[][]; .user.login == "github-actions[bot]" and .user.type == "Bot"
+                and (.body | split("\n")[0]) == $marker)
+            end
+          ' <<<"$comments")
+          if [ "$failed" = true ]; then
+            latest_head=$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)
+            if [ "$latest_head" = "$head_oid" ]; then
+              remove_ready_label
+            fi
+          fi

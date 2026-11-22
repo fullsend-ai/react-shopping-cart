@@ -26,7 +26,8 @@
 #      with a finding marker and exact **[low]** severity. Re-query; any
 #      unresolved thread requires a human to resolve it and merge.
 #   6. Failure reporting: one comment per reviewed head, updated on retries,
-#      names the failed guard; remove ready-for-merge.
+#      names the failed guard; remove ready-for-merge. A later successful
+#      retry supersedes that failure marker and records the merge.
 # All guards capture their API output first, so an API failure aborts
 # the job (fail-closed) rather than skipping the check.
 #
@@ -63,12 +64,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  # Separate event groups: GitHub replaces a group's pending run even with
-  # cancel-in-progress:false. A label event must not displace an approval.
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-${{ github.event_name }}
-  cancel-in-progress: false
-
 jobs:
   merge-on-clean-review:
     # Runs only when the fullsend review agent just approved a PR authored
@@ -80,6 +75,11 @@ jobs:
       && github.event.review.state == 'approved'
       && github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
       && !github.event.pull_request.draft
+    # Job eligibility is evaluated before job-level concurrency. Skipped
+    # reviews/labels must not displace pending work (even with cancel:false).
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-review
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     # A job-level permissions block sets every unlisted scope to none. The
     # squash-merge runs as github-actions[bot], and GitHub performs
@@ -271,7 +271,19 @@ jobs:
           # API failure. A label event racing before the marker is covered
           # by this final removal; a later event can see the marker itself.
           # Preserve reporting failures and surface label-removal failures.
-          trap 'status=$?; gh pr edit "$PR_URL" --remove-label ready-for-merge || status=1; exit "$status"' EXIT
+          remove_ready_label() {
+            local response
+            if response=$(gh api --method DELETE --include "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels/ready-for-merge"); then
+              return 0
+            fi
+            # Only a missing label is idempotent success; permission, rate
+            # limit and service failures must remain visible failures.
+            if grep -qE '^HTTP/[0-9.]+ 404([[:space:]]|$)' <<<"$response"; then
+              return 0
+            fi
+            return 1
+          }
+          trap 'status=$?; remove_ready_label || status=1; exit "$status"' EXIT
           marker="<!-- auto-merge-guard:${REVIEW_SHA} -->"
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           # shellcheck disable=SC2016 # Literal Markdown backticks.
@@ -293,6 +305,31 @@ jobs:
             gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" -f body="$body"
           fi
 
+      - name: Record a successful retry
+        if: steps.merge.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEW_SHA: ${{ github.event.review.commit_id }}
+        run: |
+          set -euo pipefail
+          marker="<!-- auto-merge-guard:${REVIEW_SHA} -->"
+          comments=$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments")
+          comment_id=$(jq -r --arg marker "$marker" '
+            if type != "array" or any(.[]; type != "array") then error("Invalid comments response") else
+              [.[][] | select(.user.login == "github-actions[bot]" and .user.type == "Bot")
+                | select((.body | split("\n")[0]) == $marker)]
+              | first | .id // empty
+            end
+          ' <<<"$comments")
+          if [ -n "$comment_id" ]; then
+            run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            # shellcheck disable=SC2016 # Literal Markdown backticks.
+            body=$(printf '<!-- auto-merge-complete:%s -->\nAuto-merge succeeded for commit `%s` after a previous refusal.\n\n[Workflow run](%s)' \
+              "$REVIEW_SHA" "$REVIEW_SHA" "$run_url")
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" -f body="$body"
+          fi
+
   clear-late-ready-label:
     # App-token label events may arrive after the failure reporter finished.
     # This path never resolves threads or merges; it reconciles labels only.
@@ -302,6 +339,9 @@ jobs:
       && github.event.label.name == 'ready-for-merge'
       && github.actor == 'fullsend-ai-review[bot]'
       && github.event.pull_request.user.login == 'fullsend-ai-coder[bot]'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.pull_request.number }}-ready-label
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
@@ -314,6 +354,18 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
+          remove_ready_label() {
+            local response
+            if response=$(gh api --method DELETE --include "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels/ready-for-merge"); then
+              return 0
+            fi
+            # Only a missing label is idempotent success; permission, rate
+            # limit and service failures must remain visible failures.
+            if grep -qE '^HTTP/[0-9.]+ 404([[:space:]]|$)' <<<"$response"; then
+              return 0
+            fi
+            return 1
+          }
           head_oid=$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)
           marker="<!-- auto-merge-guard:${head_oid} -->"
           comments=$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments")
@@ -326,6 +378,6 @@ jobs:
           if [ "$failed" = true ]; then
             latest_head=$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)
             if [ "$latest_head" = "$head_oid" ]; then
-              gh pr edit "$PR_URL" --remove-label ready-for-merge
+              remove_ready_label
             fi
           fi

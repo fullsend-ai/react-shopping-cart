@@ -1,7 +1,8 @@
 """Run the workflow's actual shell steps against a stateful GitHub API double.
 
 Run: python3 -m unittest discover -s .github/tests -v
-No credentials or third-party Python packages are needed.
+Install test dependencies: python3 -m pip install -r .github/tests/requirements.txt
+No GitHub credentials are needed.
 """
 
 import json
@@ -10,8 +11,9 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
-import textwrap
 import unittest
+
+import yaml
 
 WORKFLOW = Path(__file__).resolve().parents[1] / 'workflows/auto-merge.yml'
 SHA = 'a' * 40
@@ -119,6 +121,18 @@ elif a[0] == 'api':
             if s.get('comment_error'): die('comments unavailable')
             assert '--paginate' in a and '--slurp' in a
             emit([s.get('comments', [])])
+    elif endpoint == base+'/issues/104/labels/ready-for-merge':
+        assert option('--method') == 'DELETE'
+        assert '--include' in a
+        s.setdefault('effects', []).append('remove-label')
+        status = s.get('label_status', 200)
+        if s.get('label_error'): status = 403
+        if status != 200:
+            save()
+            print('HTTP/2.0 '+str(status)+' Error')
+            sys.exit(1)
+        s['ready'] = False
+        emit({})
     elif endpoint == base+'/issues/comments/12':
         assert option('--method') == 'PATCH'
         s['comments'][0]['body'] = field('body')
@@ -141,8 +155,12 @@ class AutoMergeTests(unittest.TestCase):
             'head': SHA, 'reviews': [], 'files': [{'filename': 'src/product.tsx'}],
             'expected_files': 1, 'threads': [], 'ready': True,
         }
-        self.scripts = [textwrap.dedent(block) for block in re.findall(
-            r'^        run: \|\n((?:(?:          .*|)\n?)*)', WORKFLOW.read_text(), re.M)]
+        self.workflow = yaml.load(WORKFLOW.read_text(), Loader=yaml.BaseLoader)
+        self.scripts = {
+            step['name']: step['run']
+            for job in self.workflow['jobs'].values()
+            for step in job['steps'] if 'run' in step
+        }
         self.env = {
             **os.environ, 'PATH': str(self.root)+os.pathsep+os.environ['PATH'],
             'FAKE_GH_STATE': str(self.root/'state.json'),
@@ -158,12 +176,16 @@ class AutoMergeTests(unittest.TestCase):
         statefile = Path(self.env['FAKE_GH_STATE'])
         statefile.write_text(json.dumps(self.state))
         Path(self.env['GITHUB_OUTPUT']).write_text('')
-        result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', self.scripts[0]],
+        result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', self.scripts['Merge the approved commit']],
                                 env=self.env, text=True, capture_output=True)
+        self.success_result = None
+        if result.returncode == 0 and 'Record a successful retry' in self.scripts:
+            self.success_result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', self.scripts['Record a successful retry']],
+                env=self.env, text=True, capture_output=True)
         self.reason = Path(self.env['GITHUB_OUTPUT']).read_text().removeprefix('reason=').strip()
         self.report_result = None
         if result.returncode and len(self.scripts) > 1:
-            self.report_result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', self.scripts[1]],
+            self.report_result = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', self.scripts['Report why auto-merge failed']],
                 env={**self.env, 'FAILURE_REASON': self.reason}, text=True, capture_output=True)
         self.state = json.loads(statefile.read_text())
         self.logs = result.stdout + result.stderr
@@ -319,7 +341,6 @@ class AutoMergeTests(unittest.TestCase):
     def test_late_ready_label_is_removed_only_for_failed_current_head(self):
         self.state['files'] = [{'filename': 'package.json'}]
         self.assert_blocked('path')
-        self.assertEqual(len(self.scripts), 3, 'Missing late-label cleanup step')
         for sha, author, expected_ready in (
             (SHA, 'github-actions[bot]', False),
             ('b'*40, 'github-actions[bot]', True),
@@ -330,12 +351,65 @@ class AutoMergeTests(unittest.TestCase):
                 self.state['comments'][0]['user'] = {'login': author, 'type': 'Bot' if author.endswith('[bot]') else 'User'}
                 self.state['ready'] = True
                 Path(self.env['FAKE_GH_STATE']).write_text(json.dumps(self.state))
-                r = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', self.scripts[2]],
+                r = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', self.scripts['Remove a late ready label for a failed head']],
                                    env=self.env, text=True, capture_output=True)
                 self.assertEqual(r.returncode, 0, r.stdout+r.stderr)
                 self.state = json.loads(Path(self.env['FAKE_GH_STATE']).read_text())
                 self.assertEqual(self.state['ready'], expected_ready)
                 self.assertEqual(len(self.state['comments']), 1)
+
+    def test_successful_same_head_retry_supersedes_failure_marker(self):
+        self.state['threads'] = [thread(body=LOW.replace('[low]', '[medium]'))]
+        self.assert_blocked('unresolved')
+        self.state['threads'][0]['isResolved'] = True
+        self.assertEqual(self.run_workflow(), 0, self.logs)
+        self.assertIsNotNone(self.success_result, 'Successful retries must reconcile prior reports')
+        self.assertEqual(self.success_result.returncode, 0, self.success_result.stderr)
+        self.assertEqual(len(self.state['comments']), 1)
+        body = self.state['comments'][0]['body']
+        self.assertIn('Auto-merge succeeded', body)
+        self.assertNotIn('<!-- auto-merge-guard:', body)
+        self.state['ready'] = True
+        Path(self.env['FAKE_GH_STATE']).write_text(json.dumps(self.state))
+        r = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c',
+                            self.scripts['Remove a late ready label for a failed head']],
+                           env=self.env, text=True, capture_output=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(json.loads(Path(self.env['FAKE_GH_STATE']).read_text())['ready'])
+
+    def test_label_removal_uses_issues_write_api_and_accepts_only_404(self):
+        for status, want_exit in ((200, 0), (404, 0), (403, 1), (500, 1)):
+            with self.subTest(status=status):
+                self.setUp()
+                self.state.update(files=[{'filename': 'package.json'}],
+                                  label_status=status, ready=status != 404)
+                self.assertNotEqual(self.run_workflow(), 0)
+                self.assertEqual(self.report_result.returncode, want_exit, self.report_result.stderr)
+                deletes = [c for c in self.state['calls'] if '/labels/ready-for-merge' in ' '.join(c)]
+                self.assertEqual(len(deletes), 1, 'Use REST label deletion with issues:write')
+                self.assertFalse(any(c[:2] == ['pr', 'edit'] for c in self.state['calls']))
+                if status in (200, 404):
+                    self.assertFalse(self.state['ready'])
+                # The label-only job has a narrower token. Exercise its
+                # own shell as well, rather than trusting a shared double.
+                self.state['ready'] = status != 404
+                Path(self.env['FAKE_GH_STATE']).write_text(json.dumps(self.state))
+                r = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c',
+                                    self.scripts['Remove a late ready label for a failed head']],
+                                   env=self.env, text=True, capture_output=True)
+                self.assertEqual(r.returncode, want_exit, r.stderr)
+                self.state = json.loads(Path(self.env['FAKE_GH_STATE']).read_text())
+                if status in (200, 404):
+                    self.assertFalse(self.state['ready'])
+
+    def test_success_note_failure_does_not_report_a_merge_refusal(self):
+        self.state['comment_error'] = True
+        self.assertEqual(self.run_workflow(), 0, self.logs)
+        self.assertIsNotNone(self.success_result)
+        self.assertNotEqual(self.success_result.returncode, 0)
+        self.assertEqual(self.state['effects'], ['merge'])
+        self.assertEqual(self.state.get('comments', []), [])
+        self.assertIsNone(self.report_result)
 
     def test_label_failure_does_not_prevent_comment(self):
         self.state.update(files=[{'filename': 'package.json'}], label_error=True)
@@ -348,6 +422,94 @@ class AutoMergeTests(unittest.TestCase):
         self.assertNotEqual(self.run_workflow(), 0)
         self.assertFalse(self.state['ready'])
         self.assertNotEqual(self.report_result.returncode, 0)
+
+
+def context_value(context, path):
+    value = context
+    for part in path.split('.'):
+        value = value.get(part, {}) if isinstance(value, dict) else {}
+    return value if value != {} else ''
+
+
+def eligible(expression, context):
+    for clause in expression.split('&&'):
+        clause = clause.strip()
+        if '==' in clause:
+            key, value = clause.split('==')
+            value = value.strip()
+            if not re.fullmatch("'[^']*'", value):
+                raise ValueError('Unsupported condition: '+clause)
+            matches = context_value(context, key.strip()) == value[1:-1]
+        elif re.fullmatch(r'!?[a-zA-Z_.]+', clause):
+            matches = bool(context_value(context, clause.lstrip('!')))
+            if clause.startswith('!'):
+                matches = not matches
+        else:
+            raise ValueError('Unsupported condition: '+clause)
+        if not matches:
+            return False
+    return True
+
+
+def occupied_groups(workflow, github):
+    context = {'github': github}
+    def render(group):
+        return re.sub(r'\$\{\{\s*([a-zA-Z_.]+)\s*\}\}',
+                      lambda m: str(context_value(context, m[1])), group)
+    # Workflow groups are occupied even when every job skips. Job groups
+    # are entered only after the job's if evaluates true (GitHub contract).
+    if 'concurrency' in workflow:
+        return [render(workflow['concurrency']['group'])]
+    return [render(job['concurrency']['group'])
+            for job in workflow['jobs'].values()
+            if eligible(job['if'], context)]
+
+
+class DispatchTests(unittest.TestCase):
+    def setUp(self):
+        self.workflow = yaml.load(WORKFLOW.read_text(), Loader=yaml.BaseLoader)
+        self.github = {
+            'workflow': 'merge agent PRs on clean review',
+            'event_name': 'pull_request_review', 'actor': 'fullsend-ai-review[bot]',
+            'event': {'action': 'submitted',
+                      'review': {'state': 'approved', 'user': {'login': 'fullsend-ai-review[bot]'}},
+                      'pull_request': {'number': 104, 'draft': False,
+                                       'user': {'login': 'fullsend-ai-coder[bot]'}}},
+        }
+
+    def test_skipped_reviews_do_not_occupy_approval_queue(self):
+        self.assertEqual(len(occupied_groups(self.workflow, self.github)), 1)
+        for field, value in (('state', 'commented'), ('state', 'changes_requested'),
+                             ('user', {'login': 'human'})):
+            with self.subTest(field=field, value=value):
+                self.setUp()
+                self.github['event']['review'][field] = value
+                self.assertEqual(occupied_groups(self.workflow, self.github), [])
+        self.setUp()
+        self.github['event']['pull_request']['draft'] = True
+        self.assertEqual(occupied_groups(self.workflow, self.github), [])
+        self.setUp()
+        self.github['event']['pull_request']['user']['login'] = 'human'
+        self.assertEqual(occupied_groups(self.workflow, self.github), [])
+
+    def test_only_matching_ready_label_events_occupy_cleanup_queue(self):
+        review_group = occupied_groups(self.workflow, self.github)
+        self.github['event_name'] = 'pull_request'
+        self.github['event']['action'] = 'labeled'
+        self.github['event']['label'] = {'name': 'ready-for-merge'}
+        label_group = occupied_groups(self.workflow, self.github)
+        self.assertEqual(len(label_group), 1)
+        self.assertNotEqual(label_group, review_group)
+        self.github['event']['label']['name'] = 'requires-manual-review'
+        self.assertEqual(occupied_groups(self.workflow, self.github), [])
+        self.github['event']['label']['name'] = 'ready-for-merge'
+        self.github['actor'] = 'human'
+        self.assertEqual(occupied_groups(self.workflow, self.github), [])
+
+    def test_different_prs_have_independent_queues(self):
+        first = occupied_groups(self.workflow, self.github)
+        self.github['event']['pull_request']['number'] = 105
+        self.assertNotEqual(occupied_groups(self.workflow, self.github), first)
 
 
 if __name__ == '__main__':

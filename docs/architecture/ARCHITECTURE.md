@@ -73,7 +73,8 @@ src/index.tsx
 
 ## Validation
 
-The repo has no build or test CI. Run each of these and report the results in
+The repo has no application build or test CI (merge-workflow tests run in
+`auto-merge-tests.yml`). Run each of these and report the results in
 the PR (see [`AGENTS.md`](../../AGENTS.md)):
 
 ```sh

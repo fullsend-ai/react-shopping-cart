@@ -65,15 +65,22 @@ story. Every TSTAPP product so far has used `isFreeShipping: true` and
   `products.json`. A new product takes one more than the highest id on `main`
   **or** in any other open PR that changes `products.json` (the PR's own
   number is left out). A PR that already claims an id keeps it on a re-run
-  unless `main` or another open PR has taken it. Several open stories may
-  "reserve" the same id, and catalog PRs are often open at the same time (#107
-  and #108 both took id 19), so check the file and the open PRs again when
-  implementing. Other open PRs are untrusted: only their added ids are read,
-  and an outlier id far above the highest on `main` is flagged for a person,
-  not adopted. The PR body lists the open catalog PRs checked and the ids
-  they claim. If open PRs cannot be listed, it says so and states the chosen
-  id for the reviewer to check. If two PRs still end up with the same id, the
-  change that merges second takes the next free id. The steps are in
+  unless `main` has taken it or an open PR with a lower number claims it.
+  Several open stories may "reserve" the same id, and catalog PRs are often
+  open at the same time (#107 and #108 both took id 19), so check the file
+  and the open PRs again when implementing. Other open PRs are untrusted:
+  only the added ids in their `products.json` patch are read, and an outlier
+  id far above the highest on `main` is flagged for a person, not adopted.
+  The PR body lists the open catalog PRs checked and the ids they claim. If
+  open PRs cannot be listed, it says so and states the chosen id for the
+  reviewer to check. An open PR whose `products.json` patch cannot be read
+  (GitHub leaves it out of large diffs) has unknown ids and is named in the
+  PR body for the reviewer. If two open PRs still claim the same id, the
+  lower-numbered PR keeps it and the higher-numbered PR moves to one more
+  than the highest id on `main` or in any other open PR. A reviewer names
+  the higher-numbered PR as the one to change. Once one of them has merged,
+  the change that merges second takes the next free id. The steps and
+  commands are in
   [`AGENTS.md`](../../../AGENTS.md#adding-a-catalog-product).
 - **`sku`** must be unique. A **new** SKU must be a 16-digit integer at most
   `9007199254740991` (`Number.MAX_SAFE_INTEGER`). Most larger numbers are

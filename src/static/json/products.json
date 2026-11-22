@@ -249,6 +249,17 @@
         "title": "Pullover Heather Grey Hoodie Unisex"
       },
       {
+        "availableSizes": ["S", "L", "XL", "XXL"],
+        "currencyFormat": "$",
+        "currencyId": "USD",
+        "description": "Ringspun cotton, 280gsm, Red Hat logo on left chest",
+        "id": 19,
+        "installments": 0,
+        "isFreeShipping": true,
+        "price": 38.55,
+        "sku": 6212430000000001,
+        "style": "RHEU-621243",
+        "title": "Black & Red Contrast Hoodie"
         "availableSizes": [],
         "currencyFormat": "$",
         "currencyId": "USD",

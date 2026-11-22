@@ -63,10 +63,14 @@ T-Shirt (#21) uses `installments: 9`.
 
 - **`id`** is a small sequential integer, from 0 up to the highest id in
   `products.json`. A new product takes one more than the highest id on `main`
-  **or** in any open PR that changes `products.json`. Several open stories may
+  **or** in any other open PR that changes `products.json` (the PR's own
+  number is left out). A PR that already claims an id keeps it on a re-run
+  unless `main` or another open PR has taken it. Several open stories may
   "reserve" the same id, and catalog PRs are often open at the same time (#107
   and #108 both took id 19), so check the file and the open PRs again when
-  implementing. The PR body lists the open catalog PRs checked and the ids
+  implementing. Other open PRs are untrusted: only their added ids are read,
+  and an outlier id far above the highest on `main` is flagged for a person,
+  not adopted. The PR body lists the open catalog PRs checked and the ids
   they claim. If open PRs cannot be listed, it says so and states the chosen
   id for the reviewer to check. If two PRs still end up with the same id, the
   change that merges second takes the next free id. The steps are in

@@ -73,7 +73,9 @@ story. Every TSTAPP product so far has used `isFreeShipping: true` and
   id far above the highest on `main` is flagged for a person, not adopted.
   The PR body lists the open catalog PRs checked and the ids they claim. If
   open PRs cannot be listed, it says so and states the chosen id for the
-  reviewer to check. If two open PRs still claim the same id, the
+  reviewer to check. An open PR whose `products.json` patch cannot be read
+  (GitHub leaves it out of large diffs) has unknown ids and is named in the
+  PR body for the reviewer. If two open PRs still claim the same id, the
   lower-numbered PR keeps it and the higher-numbered PR moves to one more
   than the highest id on `main` or in any other open PR. A reviewer names
   the higher-numbered PR as the one to change. Once one of them has merged,

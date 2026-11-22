@@ -68,13 +68,16 @@ story. Every TSTAPP product so far has used `isFreeShipping: true` and
   already claims an id keeps it on a re-run unless `main` has taken it or an
   open PR with a lower number claims it: of two open PRs that claim the same
   id, the lower-numbered one keeps it and the other moves. Once one of them
-  has merged, the PR still open moves. Other open PRs are untrusted: only the
-  added ids in their `products.json` patch are read. An id more than 20 above
-  the highest on `main` is an outlier, flagged for a person and not adopted.
-  A PR whose patch cannot be read (GitHub leaves it out of large diffs) has
-  unknown ids and is named in the PR body for the reviewer.
-  [`scripts/catalog-ids.mjs`](../../../scripts/catalog-ids.mjs)
-  (`npm run catalog:next-id`) applies these rules. The steps are in
+  has merged, the PR still open moves. Each id a PR must move gets its own
+  replacement, past every id that PR keeps, so a PR that adds several
+  products never repeats an id. Other open PRs are untrusted: only the added
+  ids in their `products.json` patch are read. An id more than 20 above the
+  highest on `main` is an outlier, flagged for a person and not adopted. A PR
+  whose patch cannot be read (GitHub leaves it out of large diffs), or that
+  adds an id line in a form the script does not read, has unknown ids and is
+  named in the PR body for the reviewer.
+  [`scripts/catalog-ids.mjs`](../../../scripts/catalog-ids.mjs) applies these
+  rules. Run the copy on `main`, never one from a PR branch. The steps are in
   [`AGENTS.md`](../../../AGENTS.md#adding-a-catalog-product).
 - **`sku`** must be unique. A **new** SKU must be a 16-digit integer at most
   `9007199254740991` (`Number.MAX_SAFE_INTEGER`). Most larger numbers are

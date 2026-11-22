@@ -42,16 +42,26 @@ export function mainIds(products) {
 }
 
 const ADDED_ID = /^\+\s*\{?\s*"id"\s*:\s*(\d+)\s*(?:,|\}|$)/;
+// An added line that may set an id in a form ADDED_ID does not read: an
+// "id" key anywhere on the line (after another key, a non-integer value,
+// trailing text) or a key spelled with a \u escape.
+const MAYBE_ID = /"id"\s*:|"[^"]*\\u[0-9a-fA-F]{4}[^"]*"\s*:/;
 const HUNK = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 
-// Added ids and bare hunk ranges in one file's patch. Returns numbers only.
+// Added ids and bare hunk ranges in one file's patch. Returns numbers only,
+// plus `unreadable`: whether an added line may set an id it could not read.
 export function parsePatch(patch) {
   const ids = new Set();
   const hunks = [];
+  let unreadable = false;
   for (const line of patch.split('\n')) {
     const id = ADDED_ID.exec(line);
     if (id) {
       ids.add(Number(id[1]));
+      continue;
+    }
+    if (line.startsWith('+') && MAYBE_ID.test(line)) {
+      unreadable = true;
       continue;
     }
     const h = HUNK.exec(line);
@@ -63,7 +73,7 @@ export function parsePatch(patch) {
       hunks.push(`-${range(h[1], h[2])} +${range(h[3], h[4])}`);
     }
   }
-  return { ids: [...ids].sort((a, b) => a - b), hunks };
+  return { ids: [...ids].sort((a, b) => a - b), hunks, unreadable };
 }
 
 // What a PR's file list says about products.json.
@@ -80,13 +90,16 @@ export function productsClaim(files, truncated) {
   if (typeof entry.patch !== 'string') {
     return { changes: true, unknown: 'patch not available' };
   }
-  return { changes: true, ...parsePatch(entry.patch) };
+  const { ids, hunks, unreadable } = parsePatch(entry.patch);
+  if (unreadable) return { changes: true, unknown: 'unreadable id line' };
+  return { changes: true, ids, hunks };
 }
 
 // Applies the id policy from AGENTS.md "Adding a catalog product" step 2.
 //   ids:       ids on main
 //   claims:    [{ number, ids }] for every open PR whose ids are readable
-//   excludePr: the caller's own PR, left out of the next-id computation
+//   excludePr: the caller's own PR. Its ids are judged keep or move (with a
+//              replacement id) instead of being counted as another claim.
 export function decide({ ids, claims, excludePr }) {
   const onMain = new Set(ids);
   const mainMax = ids.length ? Math.max(...ids) : -1;
@@ -117,7 +130,6 @@ export function decide({ ids, claims, excludePr }) {
     })
     .sort((a, b) => a.id - b.id);
 
-  const nextId = highest + 1;
   let own = null;
   const mine = claims.find((c) => c.number === excludePr);
   if (mine) {
@@ -137,7 +149,13 @@ export function decide({ ids, claims, excludePr }) {
       const higher = prs.filter((n) => n > excludePr).sort((a, b) => a - b);
       return { id, keep: true, alsoClaimedBy: higher };
     });
+    // The ids the excluded PR keeps are taken too. Each id it must move gets
+    // its own replacement past every other claim, so a PR that adds several
+    // products never ends up with a duplicate.
+    for (const o of own) if (o.keep) highest = Math.max(highest, o.id);
+    for (const o of own) if (!o.keep) o.to = ++highest;
   }
+  const nextId = highest + 1;
   return { mainMax, nextId, outliers, takenByMain, contested, own };
 }
 
@@ -214,8 +232,8 @@ function prNumber(value) {
 export async function run(argv, { api, out, err }) {
   const [command, ...rest] = argv;
   try {
-    if (command === 'pr-ids' && rest.length === 1 && prNumber(rest[0])) {
-      const number = prNumber(rest[0]);
+    const number = prNumber(rest[0]);
+    if (command === 'pr-ids' && rest.length === 1 && number !== null) {
       claimLines(number, await fetchPrClaim(api, number)).forEach((l) =>
         out(l),
       );
@@ -274,7 +292,7 @@ export async function run(argv, { api, out, err }) {
         out(`${self}: ids unknown (${excluded.unknown})`);
       } else if (d.own && d.own.length) {
         for (const o of d.own) {
-          const verdict = o.keep ? 'keep' : `move (${o.why})`;
+          const verdict = o.keep ? 'keep' : `move (${o.why}) to ${o.to}`;
           const higher = o.alsoClaimedBy.map((n) => `#${n}`).join(', ');
           out(
             `${self}: id ${o.id} ${verdict}${higher ? `, ${higher} must move` : ''}`,

@@ -1,7 +1,7 @@
 # Delivery
 
 How a change gets from a Jira story to `main`, and what happens after that.
-Checked against the repository and its GitHub settings on 2026-11-17.
+GitHub ruleset rechecked on 2026-11-22; auto-merge behavior updated for issue #104.
 
 **Merging to `main` does not deploy the site.** No workflow builds or
 deploys, and the repository holds no Firebase credentials. The Firebase site
@@ -48,20 +48,23 @@ main  (no deploy)
 
 ## Workflows
 
-| Workflow                 | Trigger                                                     | What it does                                                                                                                                                                                 |
-| ------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fullsend.yaml`          | issues, `/fs-*` comments, `pull_request_target`, PR reviews | Routes the event to fullsend's `reusable-dispatch.yml` (pinned to v0.56.1), which runs the triage, code, review or fix agent. Also handles `/fs-fix-stop`. Managed by fullsend: do not edit. |
-| `fullsend-poll-jira.yml` | cron `2,7,…,57 * * * *`, manual                             | Polls Jira (site and project from `.fullsend/config.yaml`) and dispatches the agents for new `/fs-*` commands.                                                                               |
-| `auto-merge.yml`         | `pull_request_review` submitted                             | Merges agent PRs on a clean bot review (rules below).                                                                                                                                        |
-| `prioritize.yml`         | `workflow_dispatch` only                                    | Fullsend RICE scoring into a GitHub Project. Managed by fullsend.                                                                                                                            |
-| `security.yml`           | PR to `main`, push to `main`, weekly Monday 06:00 UTC       | Secret scan with gitleaks over the full history, and `npm audit --omit=dev --audit-level=high` (blocking). A full-tree audit runs but does not block.                                        |
+| Workflow                 | Trigger                                                                | What it does                                                                                                                                                                                 |
+| ------------------------ | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fullsend.yaml`          | issues, `/fs-*` comments, `pull_request_target`, PR reviews            | Routes the event to fullsend's `reusable-dispatch.yml` (pinned to v0.56.1), which runs the triage, code, review or fix agent. Also handles `/fs-fix-stop`. Managed by fullsend: do not edit. |
+| `fullsend-poll-jira.yml` | cron `2,7,…,57 * * * *`, manual                                        | Polls Jira (site and project from `.fullsend/config.yaml`) and dispatches the agents for new `/fs-*` commands.                                                                               |
+| `auto-merge.yml`         | `pull_request_review` submitted; `pull_request` labeled                | Merges approved agent PRs after handling low findings; reports failures and reconciles late ready labels (rules below).                                                                      |
+| `auto-merge-tests.yml`   | PRs and pushes to `main` changing the auto-merge workflow or its tests | Runs merge behavior/dispatch tests and actionlint with a read-only token and no secrets.                                                                                                     |
+| `prioritize.yml`         | `workflow_dispatch` only                                               | Fullsend RICE scoring into a GitHub Project. Managed by fullsend.                                                                                                                            |
+| `security.yml`           | PR to `main`, push to `main`, weekly Monday 06:00 UTC                  | Secret scan with gitleaks over the full history, and `npm audit --omit=dev --audit-level=high` (blocking). A full-tree audit runs but does not block.                                        |
 
 Dependabot (`.github/dependabot.yml`) opens npm and Actions updates monthly.
 Its ignore rules hold TypeScript at 4.9 ([`AGENTS.md`](../../AGENTS.md)).
 
 ## Checks a PR must pass
 
-**No status check is required, and there is no build or test CI.** `security`
+**No status check is required, and there is no application build or test CI.**
+`auto-merge-tests.yml` tests the merge workflow when it or its tests change.
+`security`
 runs on PRs, but neither the ruleset nor `auto-merge.yml` waits for it. The
 build and tests are checked only by whoever makes the change: the agents run
 `npm ci`, `npm run typecheck`, `npm run build` and `CI=true npm test` and
@@ -87,11 +90,22 @@ only when **all** of these hold:
    on a non-draft PR authored by `fullsend-ai-coder[bot]`.
 2. The PR head is still the reviewed commit (`--match-head-commit`).
 3. No reviewer's latest review is `CHANGES_REQUESTED` or `DISMISSED`. A
-   person's "request changes" vetoes the merge.
+   person's "request changes" vetoes the merge. A dismissal still vetoes;
+   the active ruleset does not make it a trusted human override.
 4. Every changed path (old and new names) is under `src/` or `public/`, or is
    the root `firebase.json` or `README.md`. No path may have a dot-prefixed
    segment (`.github/`, `.fullsend/`, …), and no file may be named
    `AGENTS.md`, `CLAUDE.md` or `GEMINI.md` (or their `.local.md` variants), at any depth.
+5. Every review thread is resolved. **Only after rules 1–4 pass**, the
+   workflow auto-resolves a thread if every comment is by the review bot
+   and begins with a `<!-- finding:f_… -->` marker followed immediately by
+   an exact `**[low]** category` line. It checks the full comment list,
+   re-reads the PR head before mutations, and re-queries all threads before
+   merging. Medium/high/critical, info, human replies, missing or malformed
+   headers, empty comments, and truncated comment lists remain unresolved.
+   Any remaining unresolved thread requires a person to resolve it and merge.
+   An API error, partial GraphQL response, or more than 100 threads stops
+   auto-merge and is reported; it never silently passes the gate.
 
 Anything else needs a person to merge it. **`docs/` is not on the allowlist**,
 so a PR that updates `docs/architecture/` is not merged automatically
@@ -102,6 +116,79 @@ This does not mean docs updates should be deferred. A change that alters
 behavior these docs describe updates them **in the same PR** and is
 human-merged; the PR body says so up front and has no "docs follow-up"
 section ([`AGENTS.md`](../../AGENTS.md#architecture-docs), issue #110).
+
+Issue [#104](https://github.com/fullsend-ai/react-shopping-cart/issues/104)
+authorizes low-finding auto-resolution and widens this job's
+`pull-requests` permission from `read` to `write`. `contents: write` and
+`issues: write` are retained for merging, issue closure, comments and labels.
+The `default-branch` ruleset remains active, including code-owner approval;
+GitHub's merge API is still the final enforcement point. **Accepted risk:**
+the review agent's severity decides whether human attention is needed, so a
+finding incorrectly tagged low can merge without a person seeing it. A
+reply or review arriving between the API checks and mutation/merge remains
+a check-then-act race; `--match-head-commit` pins the code, not review state
+(the existing demo limitation recorded in #11).
+
+On failure, the workflow removes `ready-for-merge` and posts the failed
+guard's reason plus a run link. An API failure names the affected phase;
+a merge API failure links to the log for GitHub's specific policy error.
+It updates its own marked comment for the same reviewed commit on retries,
+ignoring markers copied by other authors. After a successful merge on the
+same head, a separate success step replaces the old failure marker with an
+auto-merge success note. Late-label cleanup ignores that success marker. A
+success-note API failure appears in Actions and cannot post a false merge
+refusal after a completed merge. Comment and label operations are
+attempted independently, so an unavailable comments API does not prevent
+label removal. Label deletion uses the REST issues-label endpoint with
+`issues: write`; an HTTP 404 is an idempotent success, while permission and
+service errors remain failures. API outages can still prevent reporting and
+appear in the failed Actions run.
+
+The review producer posts its approval before adding `ready-for-merge`.
+A separate label-event job removes that late label if this workflow has
+already recorded failure for the **current** head. It never resolves
+threads or merges, and ignores failures for previous heads. Both paths use
+separate per-PR **job-level** concurrency groups. Job eligibility is checked
+before entering a group, so unrelated labels, non-approving reviews, human
+reviews and other skipped events cannot replace pending work. The failure
+reporter publishes its marker before removing the label, including removal
+on API-error exits;
+this covers label events that race ahead of the comment. Skipped events
+(human approvals, non-coder PRs, drafts) do not run the merge or failure
+reporter.
+
+The thread API uses GraphQL's `fullsend-ai-review` login with actor type
+`Bot`; the approval event uses REST's `fullsend-ai-review[bot]`. This is a
+GitHub-only repository workflow. GitLab/Forgejo representations are not
+accepted or dispatched here, and this change does not alter fullsend's
+cross-forge review producer or its review/fix dispatch rules.
+
+The read-only `auto-merge-tests.yml` job runs on PRs and pushes to `main`
+when the merge workflow, test files or CI workflow itself change. It runs
+the shell behavior and dispatch tests and checksum-pinned actionlint. These
+checks do not have write permissions or secrets.
+
+Run locally without GitHub credentials, in an activated Python virtual
+environment:
+
+```sh
+python3 -m pip install -r .github/tests/requirements.txt
+python3 -m unittest discover -s .github/tests -v
+actionlint .github/workflows/auto-merge.yml .github/workflows/auto-merge-tests.yml
+```
+
+The tests cover guard ordering, exact-low resolution, human replies,
+mixed severities, pagination/API errors, duplicate reports and late labels.
+They parse the workflow YAML, evaluate its flat job conditions and queue
+keys, replace GitHub API calls, and execute the real shell and `jq`. The
+small scheduling model checks the documented job-eligibility/concurrency
+contract; it does not reproduce the GitHub Actions service. A successful
+local test does not prove GitHub's `GITHUB_TOKEN` can resolve bot-authored
+threads. Verify that on an eligible bot PR, then watch
+the next five approved coder PRs for merge/report behavior (issue #104).
+If GitHub denies resolution, the workflow fails closed and reports that a
+human must resolve the thread; do not grant a broader secret as a workaround.
+The resolution would need a separately reviewed change on the producer side.
 
 The merge runs as `github-actions[bot]` with the workflow's `GITHUB_TOKEN`.
 GitHub does not start `push` workflows for commits made with that token, so
@@ -124,8 +211,9 @@ different token or the deploy listened for another event.
 
 ### Local demo: `rebuild.sh`
 
-`./rebuild.sh` is the way to show `main` running. It runs `git pull
---ff-only`, builds the image with **podman** as `localhost/demo-shop:latest`,
+`./rebuild.sh` is the way to show `main` running. It runs
+`git pull --ff-only`, builds the image with **podman** as
+`localhost/demo-shop:latest`,
 runs `npm test -- --watchAll=false` in a throwaway container (the
 `CI=true` before `podman run` stays on the host, so Jest's CI mode is off
 there and a missing snapshot is written instead of failing), replaces the `demo-shop`

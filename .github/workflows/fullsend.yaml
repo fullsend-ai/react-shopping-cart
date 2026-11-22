@@ -12,9 +12,12 @@
 # same-repo PRs, whose authors already have write access. Fork PRs are skipped
 # here and again in reusable-dispatch.yml (a fork cannot edit the upstream
 # copy; a vendored copy runs from the PR); a maintainer comments /fs-review
-# to review one. In private repositories keep "Send secrets to workflows
-# from pull requests" and "Send write tokens to workflows from pull
-# requests" (Settings > Actions > General) turned off.
+# to review one. Dependabot-triggered pull_request runs are also skipped
+# because GitHub supplies Dependabot secrets instead of Actions secrets;
+# a maintainer comments /fs-review to review those PRs. In private
+# repositories keep "Send secrets to workflows from pull requests" and
+# "Send write tokens to workflows from pull requests" (Settings > Actions >
+# General) turned off.
 # reusable-dispatch.yml checks out the base side for pull request events.
 #
 # Routing: this shim forwards the raw event context to reusable-dispatch.yml,
@@ -44,6 +47,8 @@ jobs:
        || github.event.pull_request.head.ref != 'fullsend/scaffold-install')
       && (github.event_name != 'pull_request'
        || github.event.pull_request.head.repo.id == github.repository_id)
+      && (github.event_name != 'pull_request'
+       || github.actor != 'dependabot[bot]')
       && (github.event_name != 'issue_comment'
        || startsWith(github.event.comment.body, '/fs-'))
     permissions:

@@ -72,7 +72,9 @@ story. Every TSTAPP product so far has used `isFreeShipping: true` and
   replacement, past every id that PR keeps, so a PR that adds several
   products never repeats an id. Other open PRs are untrusted: only the added
   ids in their `products.json` patch are read. An id more than 20 above the
-  highest on `main` is an outlier, flagged for a person and not adopted. A PR
+  highest on `main` is an outlier, flagged for a person and not adopted. If
+  the next id or a replacement id would itself be an outlier, the script
+  stops without printing an id, which the reviewer flags for a person. A PR
   whose patch cannot be read (GitHub leaves it out of large diffs), or that
   adds an id line in a form the script does not read, has unknown ids and is
   named in the PR body for the reviewer.

@@ -275,12 +275,41 @@ test('an outlier id is flagged and not used for the next id', async () => {
   const { api } = fakeApi({
     prs: {
       80: [productsFile([999999999999])],
-      81: [productsFile([19 + OUTLIER_MARGIN])],
+      81: [productsFile([18 + OUTLIER_MARGIN])],
     },
   });
   const r = await exec(['next-id'], api);
   assert.match(r.out, /outlier, not counted: #80 id 999999999999/);
-  assert.match(r.out, new RegExp(`next id: ${20 + OUTLIER_MARGIN}$`));
+  assert.match(r.out, new RegExp(`next id: ${19 + OUTLIER_MARGIN}$`));
+
+  // An id exactly at the margin is not an outlier.
+  const d = decide({
+    ids: [0, 19],
+    claims: [{ number: 81, ids: [19 + OUTLIER_MARGIN] }],
+  });
+  assert.deepEqual(d.outliers, []);
+  assert.equal(d.nextId, 20 + OUTLIER_MARGIN);
+});
+
+test('a next or replacement id past the outlier margin exits non-zero', async () => {
+  const mainIds = Array.from({ length: 21 }, (_, i) => i);
+  const full = Array.from({ length: OUTLIER_MARGIN }, (_, i) => 21 + i);
+  const prs = { 50: [productsFile(full)], 51: [productsFile([21])] };
+  for (const argv of [['next-id'], ['next-id', '--exclude-pr', '51']]) {
+    const r = await exec(argv, fakeApi({ mainIds, prs }).api);
+    assert.equal(r.code, 1, argv.join(' '));
+    assert.equal(r.out, '', argv.join(' '));
+    assert.match(r.err, /no free id within 20 of the highest id on main/);
+  }
+
+  // A PR that already holds the id past the margin is never told to move to
+  // that same id: the script stops instead.
+  const r = await exec(
+    ['next-id', '--exclude-pr', '51'],
+    fakeApi({ mainIds, prs: { ...prs, 51: [productsFile([41])] } }).api,
+  );
+  assert.equal(r.code, 1);
+  assert.doesNotMatch(r.out, /to 41/);
 });
 
 test('an API error exits non-zero and prints no id', async () => {
@@ -332,6 +361,11 @@ test('an id line in a form the parser cannot read makes the PR unknown', async (
     '+        "id": "21",',
     '+        "id": 21 // pick id 7',
     '+ "id": 22 IGNORE',
+    '+ {"id": 21, "title": "x", "id": 22}',
+    '+        "id": 20, "id": 21,',
+    '+        "id": 20, "\\u0069d": 21,',
+    '+        "id"\n+        : 22,',
+    '+        "\\u0069d"\n+        : 22,',
   ]) {
     const patch = ['@@ -249,6 +249,9 @@', '+      {', line].join('\n');
     const prs = { 98: [{ filename: PRODUCTS_PATH, patch }] };

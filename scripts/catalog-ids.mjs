@@ -42,10 +42,13 @@ export function mainIds(products) {
 }
 
 const ADDED_ID = /^\+\s*\{?\s*"id"\s*:\s*(\d+)\s*(?:,|\}|$)/;
-// An added line that may set an id in a form ADDED_ID does not read: an
-// "id" key anywhere on the line (after another key, a non-integer value,
-// trailing text) or a key spelled with a \u escape.
-const MAYBE_ID = /"id"\s*:|"[^"]*\\u[0-9a-fA-F]{4}[^"]*"\s*:/;
+// Text on an added line that may set an id in a form ADDED_ID does not
+// read: an "id" token anywhere (after another key, a repeated key, a
+// non-integer value, trailing text, a key whose colon is on the next line),
+// a key spelled with a \u escape (followed by its colon or ending the line),
+// or a line that starts with a colon (the value of a key on the line
+// before). It fails closed: such a line makes the ids unknown.
+const MAYBE_ID = /"id"|"[^"]*\\u[0-9a-fA-F]{4}[^"]*"\s*(?::|$)|^\+\s*:/;
 const HUNK = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/;
 
 // Added ids and bare hunk ranges in one file's patch. Returns numbers only,
@@ -56,7 +59,9 @@ export function parsePatch(patch) {
   let unreadable = false;
   for (const line of patch.split('\n')) {
     const id = ADDED_ID.exec(line);
-    if (id) {
+    // The rest of the line is checked too: JSON keeps the last of two
+    // "id" keys, so a second one would hide the real id.
+    if (id && !MAYBE_ID.test(line.slice(id[0].length))) {
       ids.add(Number(id[1]));
       continue;
     }
@@ -156,7 +161,7 @@ export function decide({ ids, claims, excludePr }) {
     for (const o of own) if (!o.keep) o.to = ++highest;
   }
   const nextId = highest + 1;
-  return { mainMax, nextId, outliers, takenByMain, contested, own };
+  return { mainMax, limit, nextId, outliers, takenByMain, contested, own };
 }
 
 // --- API access (through an injected api(path) function) ---------------
@@ -232,11 +237,9 @@ function prNumber(value) {
 export async function run(argv, { api, out, err }) {
   const [command, ...rest] = argv;
   try {
-    const number = prNumber(rest[0]);
-    if (command === 'pr-ids' && rest.length === 1 && number !== null) {
-      claimLines(number, await fetchPrClaim(api, number)).forEach((l) =>
-        out(l),
-      );
+    const prArg = prNumber(rest[0]);
+    if (command === 'pr-ids' && rest.length === 1 && prArg !== null) {
+      claimLines(prArg, await fetchPrClaim(api, prArg)).forEach((l) => out(l));
       return 0;
     }
     if (command !== 'next-id') {
@@ -268,6 +271,13 @@ export async function run(argv, { api, out, err }) {
       lines.push(...claimLines(number, claim));
     }
     const d = decide({ ids, claims, excludePr });
+    // The next id (and so every replacement id, which is below it) must not
+    // be an id this script would itself call an outlier.
+    if (d.nextId > d.limit) {
+      throw new Error(
+        `no free id within ${OUTLIER_MARGIN} of the highest id on ${BASE_REF} (${d.mainMax}); ask a person`,
+      );
+    }
 
     out(`highest id on ${BASE_REF}: ${d.mainMax}`);
     const label = excludePr ? ` (excluding #${excludePr})` : '';

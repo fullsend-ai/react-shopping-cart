@@ -62,9 +62,15 @@ T-Shirt (#21) uses `installments: 9`.
 ## Id and SKU rules
 
 - **`id`** is a small sequential integer, from 0 up to the highest id in
-  `products.json`. A new product takes the next free id. Several open stories may "reserve" the same id, so check
-  the file again when implementing. The change that merges second takes the
-  next free id.
+  `products.json`. A new product takes one more than the highest id on `main`
+  **or** in any open PR that changes `products.json`. Several open stories may
+  "reserve" the same id, and catalog PRs are often open at the same time (#107
+  and #108 both took id 19), so check the file and the open PRs again when
+  implementing. The PR body lists the open catalog PRs checked and the ids
+  they claim. If open PRs cannot be listed, it says so and states the chosen
+  id for the reviewer to check. If two PRs still end up with the same id, the
+  change that merges second takes the next free id. The steps are in
+  [`AGENTS.md`](../../../AGENTS.md#adding-a-catalog-product).
 - **`sku`** must be unique. A **new** SKU must be a 16-digit integer at most
   `9007199254740991` (`Number.MAX_SAFE_INTEGER`). Most larger numbers are
   silently rounded when the JSON is parsed, so the image name the code builds
@@ -124,4 +130,6 @@ as they are.
 
 Some tests hard-code catalog totals (for example the brand-filter tests count
 the products that match "Red Hat"). Adding a product can break them. Update
-the counts and snapshots in the same PR.
+the counts and snapshots in the same PR. Two open catalog PRs often make the
+same count edit, which merges without a conflict and leaves a wrong total, so
+after any merge from `main` recompute the counts from `products.json`.

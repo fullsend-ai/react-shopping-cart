@@ -107,6 +107,9 @@ export function productsClaim(files, truncated) {
 //              replacement id) instead of being counted as another claim.
 //   unknown:   whether any other open PR changes products.json with ids that
 //              cannot be read (so it is not in `claims`).
+// `fallback` in the result is true when, with `unknown` set, some id had to
+// be taken below a readable claim or kept id (it may collide with an
+// ids-unknown PR).
 export function decide({ ids, claims, excludePr, unknown = false }) {
   const onMain = new Set(ids);
   const mainMax = ids.length ? Math.max(...ids) : -1;
@@ -134,16 +137,22 @@ export function decide({ ids, claims, excludePr, unknown = false }) {
   // high claim does not use up the ids below it, and the result is never an
   // id this script would itself call an outlier. While some PR's ids are
   // unknown, a free id below a readable claim may be one that PR holds, so
-  // the search starts above every taken id instead (#125).
-  const allocate = () => {
-    const start = unknown ? Math.max(mainMax, ...taken) + 1 : mainMax + 1;
-    for (let id = start; id <= limit; id++) {
-      if (!taken.has(id)) {
-        taken.add(id);
-        return id;
-      }
-    }
+  // the search starts above every taken id instead (#125). If nothing above
+  // every taken id fits, it falls back to the smallest free id and sets
+  // `fallback`, so the CLI can warn instead of refusing (#126).
+  let fallback = false;
+  const firstFree = (start) => {
+    for (let id = start; id <= limit; id++) if (!taken.has(id)) return id;
     return null;
+  };
+  const allocate = () => {
+    let id = unknown ? firstFree(Math.max(mainMax, ...taken) + 1) : null;
+    if (id === null) {
+      id = firstFree(mainMax + 1);
+      if (id !== null && unknown) fallback = true;
+    }
+    if (id !== null) taken.add(id);
+    return id;
   };
   const contested = [...byId.entries()]
     .filter(([, prs]) => prs.length > 1)
@@ -180,7 +189,16 @@ export function decide({ ids, claims, excludePr, unknown = false }) {
   }
   // Replacements are allocated first, so if any of them is null, so is this.
   const nextId = allocate();
-  return { mainMax, limit, nextId, outliers, takenByMain, contested, own };
+  return {
+    mainMax,
+    limit,
+    nextId,
+    outliers,
+    takenByMain,
+    contested,
+    own,
+    fallback,
+  };
 }
 
 // --- API access (through an injected api(path) function) ---------------
@@ -278,7 +296,7 @@ export async function run(argv, { api, out, err }) {
     const numbers = (await fetchOpenPrs(api)).sort((a, b) => a - b);
     const lines = [];
     const claims = [];
-    let unknown = 0;
+    const unknownPrs = [];
     let excluded = null;
     for (const number of numbers) {
       const claim = await fetchPrClaim(api, number);
@@ -286,10 +304,11 @@ export async function run(argv, { api, out, err }) {
       if (!claim.changes) continue;
       if (!claim.unknown) claims.push({ number, ids: claim.ids });
       if (number === excludePr) continue;
-      if (claim.unknown) unknown++;
+      if (claim.unknown) unknownPrs.push(number);
       lines.push(...claimLines(number, claim));
     }
-    const d = decide({ ids, claims, excludePr, unknown: unknown > 0 });
+    const unknown = unknownPrs.length > 0;
+    const d = decide({ ids, claims, excludePr, unknown });
     // No free id is left within the margin for the next id (or for a
     // replacement id, which is allocated before it).
     if (d.nextId === null) {
@@ -331,8 +350,17 @@ export async function run(argv, { api, out, err }) {
         out(`${self}: no id claimed`);
       }
     }
-    if (unknown)
-      out(`PRs with unknown ids: ${unknown} (name them in the PR body)`);
+    if (unknown) {
+      out(
+        `PRs with unknown ids: ${unknownPrs.length} (name them in the PR body)`,
+      );
+    }
+    if (d.fallback) {
+      const prs = unknownPrs.map((n) => `#${n}`).join(', ');
+      out(
+        `warning: no free id above every readable claim, so an id below one was used; it may collide with ids unknown PR ${prs} (ask a person to check)`,
+      );
+    }
     out(`next id: ${d.nextId}`);
     return 0;
   } catch (e) {

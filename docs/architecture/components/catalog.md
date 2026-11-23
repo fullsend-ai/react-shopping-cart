@@ -83,7 +83,12 @@ story. Every TSTAPP product so far has used `isFreeShipping: true` and
   While any other open PR has unknown ids, a free id below a readable claim
   may be the one that PR holds, so the next id and every replacement id go
   above every readable claim and every id kept, still at most 20 above the
-  highest on `main`.
+  highest on `main`. If none fits there (for example, one PR claims exactly
+  20 above), the script falls back to the smallest free id within 20 rather
+  than stopping (#126). Stopping would let two cheap PRs, one with unknown
+  ids and one at the margin, block every catalog contributor. The script
+  then prints a `warning:` line that names the ids-unknown PRs, so a person
+  checks the id against them.
   [`scripts/catalog-ids.mjs`](../../../scripts/catalog-ids.mjs) applies these
   rules. Run the copy on `main`, never one from a PR branch. The steps are in
   [`AGENTS.md`](../../../AGENTS.md#adding-a-catalog-product).

@@ -507,15 +507,32 @@ test('invariant: allocated ids are free, distinct, within the margin, and presen
     const present = allocated.filter((a) => a !== null);
     assert.equal(new Set(present).size, present.length, label);
     if (!unknown) assert.equal(d.fallback, false, label);
-    if (unknown && !d.fallback) {
-      // Without the fallback, every id is above every readable claim and kept
-      // id within the margin.
+    if (unknown) {
+      // `fallback` is set exactly when some id is not above every readable
+      // claim and kept id within the margin.
       const floor = Math.max(
         M,
         ...[...othersIds].filter((id) => id <= L),
         ...kept,
       );
-      for (const a of present) assert.ok(a > floor, label);
+      assert.equal(
+        d.fallback,
+        present.some((a) => a <= floor),
+        label,
+      );
+      // Each fallback id is the smallest free id in (mainMax, limit].
+      present.forEach((a, i) => {
+        if (a > floor) return;
+        let smallest = M + 1;
+        while (
+          othersIds.has(smallest) ||
+          kept.has(smallest) ||
+          present.slice(0, i).includes(smallest)
+        ) {
+          smallest++;
+        }
+        assert.equal(a, smallest, label);
+      });
     }
   }
 });

@@ -114,7 +114,6 @@ export function decide({ ids, claims, excludePr }) {
   const outliers = [];
   const takenByMain = [];
   const byId = new Map();
-  let highest = mainMax;
   for (const c of others) {
     for (const id of c.ids) {
       if (id > limit) {
@@ -122,11 +121,25 @@ export function decide({ ids, claims, excludePr }) {
       } else if (onMain.has(id)) {
         takenByMain.push({ number: c.number, id });
       } else {
-        highest = Math.max(highest, id);
         byId.set(id, [...(byId.get(id) || []), c.number]);
       }
     }
   }
+  // Ids that are not free: every id counted above, plus (below) the ids the
+  // excluded PR keeps and the replacements it is given.
+  const taken = new Set(byId.keys());
+  // The smallest free id in (mainMax, limit], or null if there is none. One
+  // high claim does not use up the ids below it, and the result is never an
+  // id this script would itself call an outlier.
+  const allocate = () => {
+    for (let id = mainMax + 1; id <= limit; id++) {
+      if (!taken.has(id)) {
+        taken.add(id);
+        return id;
+      }
+    }
+    return null;
+  };
   const contested = [...byId.entries()]
     .filter(([, prs]) => prs.length > 1)
     .map(([id, prs]) => {
@@ -155,12 +168,13 @@ export function decide({ ids, claims, excludePr }) {
       return { id, keep: true, alsoClaimedBy: higher };
     });
     // The ids the excluded PR keeps are taken too. Each id it must move gets
-    // its own replacement past every other claim, so a PR that adds several
-    // products never ends up with a duplicate.
-    for (const o of own) if (o.keep) highest = Math.max(highest, o.id);
-    for (const o of own) if (!o.keep) o.to = ++highest;
+    // its own free replacement, so a PR that adds several products never
+    // ends up with a duplicate.
+    for (const o of own) if (o.keep) taken.add(o.id);
+    for (const o of own) if (!o.keep) o.to = allocate();
   }
-  const nextId = highest + 1;
+  // Replacements are allocated first, so if any of them is null, so is this.
+  const nextId = allocate();
   return { mainMax, limit, nextId, outliers, takenByMain, contested, own };
 }
 
@@ -271,9 +285,9 @@ export async function run(argv, { api, out, err }) {
       lines.push(...claimLines(number, claim));
     }
     const d = decide({ ids, claims, excludePr });
-    // The next id (and so every replacement id, which is below it) must not
-    // be an id this script would itself call an outlier.
-    if (d.nextId > d.limit) {
+    // No free id is left within the margin for the next id (or for a
+    // replacement id, which is allocated before it).
+    if (d.nextId === null) {
       throw new Error(
         `no free id within ${OUTLIER_MARGIN} of the highest id on ${BASE_REF} (${d.mainMax}); ask a person`,
       );

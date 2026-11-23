@@ -280,15 +280,82 @@ test('an outlier id is flagged and not used for the next id', async () => {
   });
   const r = await exec(['next-id'], api);
   assert.match(r.out, /outlier, not counted: #80 id 999999999999/);
-  assert.match(r.out, new RegExp(`next id: ${19 + OUTLIER_MARGIN}$`));
+  assert.match(r.out, /#81: ids 38\n/);
+  assert.match(r.out, /next id: 20$/);
 
-  // An id exactly at the margin is not an outlier.
-  const d = decide({
+  // An id exactly at the margin is not an outlier; one past it is.
+  let d = decide({
     ids: [0, 19],
     claims: [{ number: 81, ids: [19 + OUTLIER_MARGIN] }],
   });
   assert.deepEqual(d.outliers, []);
-  assert.equal(d.nextId, 20 + OUTLIER_MARGIN);
+  assert.equal(d.nextId, 20);
+  d = decide({
+    ids: [0, 19],
+    claims: [{ number: 82, ids: [20 + OUTLIER_MARGIN] }],
+  });
+  assert.deepEqual(d.outliers, [{ number: 82, id: 20 + OUTLIER_MARGIN }]);
+  assert.equal(d.nextId, 20);
+});
+
+test('another PR claiming exactly the margin id still leaves a next id (#124)', async () => {
+  // Highest id on main is 19, so the margin id is 39.
+  const prs = { 83: [productsFile([19 + OUTLIER_MARGIN])] };
+  let r = await exec(['next-id'], fakeApi({ prs }).api);
+  assert.equal(r.code, 0);
+  assert.doesNotMatch(r.out, /outlier/);
+  assert.match(r.out, /next id: 20$/);
+
+  // Every id below the margin taken: the margin id itself is still free.
+  const below = Array.from({ length: OUTLIER_MARGIN - 1 }, (_, i) => 20 + i);
+  r = await exec(
+    ['next-id'],
+    fakeApi({ prs: { 84: [productsFile(below)] } }).api,
+  );
+  assert.equal(r.code, 0);
+  assert.match(r.out, new RegExp(`next id: ${19 + OUTLIER_MARGIN}$`));
+});
+
+test('the next id is the smallest free id, even below a higher claim', () => {
+  const d = decide({
+    ids: [0, 19],
+    claims: [
+      { number: 85, ids: [20, 21] },
+      { number: 86, ids: [34] },
+    ],
+  });
+  assert.equal(d.nextId, 22);
+});
+
+test('an excluded PR that must move while another PR holds the margin id gets a free id', async () => {
+  const prs = {
+    87: [productsFile([20, 19 + OUTLIER_MARGIN])],
+    88: [productsFile([20, 21])],
+  };
+  const r = await exec(['next-id', '--exclude-pr', '88'], fakeApi({ prs }).api);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /excluded PR #88: id 20 move \(claimed by #87\) to 22/);
+  assert.match(r.out, /excluded PR #88: id 21 keep/);
+  assert.match(r.out, /next id: 23$/);
+
+  // Replacements fill gaps below a high claim and never repeat an id.
+  const d = decide({
+    ids: [0, 19],
+    claims: [
+      { number: 87, ids: [20, 22, 39] },
+      { number: 88, ids: [19, 20, 24] },
+    ],
+    excludePr: 88,
+  });
+  assert.deepEqual(
+    d.own.map((o) => [o.id, o.keep, o.to]),
+    [
+      [19, false, 21],
+      [20, false, 23],
+      [24, true, undefined],
+    ],
+  );
+  assert.equal(d.nextId, 25);
 });
 
 test('a next or replacement id past the outlier margin exits non-zero', async () => {

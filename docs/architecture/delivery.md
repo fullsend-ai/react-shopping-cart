@@ -73,8 +73,9 @@ Dependabot workflow does not change its credential restrictions.
 `security`
 runs on PRs, but neither the ruleset nor `auto-merge.yml` waits for it. The
 build and tests are checked only by whoever makes the change: the agents run
-`npm ci`, `npm run typecheck`, `npm run build` and `CI=true npm test` and
-report the results in the PR body. Locally, Husky runs `lint-staged`
+`npm ci`, `npm run typecheck`, `npm run build` and `CI=true npm test`, plus
+`npm run test:scripts` when a change touches `scripts/`, and report the
+results in the PR body. Locally, Husky runs `lint-staged`
 (Prettier) before each commit and `commitlint` (Conventional Commits) on the
 message.
 

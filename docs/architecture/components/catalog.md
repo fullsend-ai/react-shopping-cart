@@ -63,21 +63,27 @@ story. Every TSTAPP product so far has used `isFreeShipping: true` and
 
 - **`id`** is a small sequential integer, from 0 up to the highest id in
   `products.json`. Catalog PRs are often open at the same time (#107 and #108
-  both took id 19), so a new product takes one more than the highest id on
-  `main` **or** in any other open PR that changes `products.json`. A PR that
-  already claims an id keeps it on a re-run unless `main` has taken it or an
-  open PR with a lower number claims it: of two open PRs that claim the same
-  id, the lower-numbered one keeps it and the other moves. Once one of them
-  has merged, the PR still open moves. Each id a PR must move gets its own
-  replacement, past every id that PR keeps, so a PR that adds several
-  products never repeats an id. Other open PRs are untrusted: only the added
-  ids in their `products.json` patch are read. An id more than 20 above the
-  highest on `main` is an outlier, flagged for a person and not adopted. If
-  the next id or a replacement id would itself be an outlier, the script
-  stops without printing an id, which the reviewer flags for a person. A PR
-  whose patch cannot be read (GitHub leaves it out of large diffs), or that
-  adds an id line in a form the script does not read, has unknown ids and is
-  named in the PR body for the reviewer.
+  both took id 19), so a new product takes the smallest id above the highest
+  id on `main`, and at most 20 above it, that no other open PR changing
+  `products.json` claims. A higher claim does not use up the free ids below
+  it (#124). A PR that already claims an id keeps it on a re-run unless
+  `main` has taken it or an open PR with a lower number claims it: of two
+  open PRs that claim the same id, the lower-numbered one keeps it and the
+  other moves. Once one of them has merged, the PR still open moves. Each id
+  a PR must move gets its own replacement, chosen the same way and not equal
+  to any id that PR keeps, so a PR that adds several products never repeats
+  an id. Other open PRs are untrusted: only the added ids in their
+  `products.json` patch are read. An id more than 20 above the highest on
+  `main` is an outlier, flagged for a person and not adopted; an id exactly
+  20 above is counted. If no free id within 20 is left for the next id or a
+  replacement id, the script stops without printing an id, which the
+  reviewer flags for a person. A PR whose patch cannot be read (GitHub leaves
+  it out of large diffs), or that adds an id line in a form the script does
+  not read, has unknown ids and is named in the PR body for the reviewer.
+  While any other open PR has unknown ids, a free id below a readable claim
+  may be the one that PR holds, so the next id and every replacement id go
+  above every readable claim and every id kept, still at most 20 above the
+  highest on `main`.
   [`scripts/catalog-ids.mjs`](../../../scripts/catalog-ids.mjs) applies these
   rules. Run the copy on `main`, never one from a PR branch. The steps are in
   [`AGENTS.md`](../../../AGENTS.md#adding-a-catalog-product).

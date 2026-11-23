@@ -84,6 +84,9 @@ npm run build
 CI=true npm test
 ```
 
+`CI=true npm test` only finds tests under `src/`. A change to `scripts/`
+(the catalog id helper) also needs `npm run test:scripts`.
+
 Agent PRs are merged automatically after a clean review only when every changed
 path is in the allowlist in `.github/workflows/auto-merge.yml`. A merge does not
 deploy the site. See [`delivery.md`](delivery.md).

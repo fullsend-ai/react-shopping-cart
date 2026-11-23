@@ -80,6 +80,10 @@ story. Every TSTAPP product so far has used `isFreeShipping: true` and
   reviewer flags for a person. A PR whose patch cannot be read (GitHub leaves
   it out of large diffs), or that adds an id line in a form the script does
   not read, has unknown ids and is named in the PR body for the reviewer.
+  While any other open PR has unknown ids, a free id below a readable claim
+  may be the one that PR holds, so the next id and every replacement id go
+  above every readable claim and every id kept, still at most 20 above the
+  highest on `main`.
   [`scripts/catalog-ids.mjs`](../../../scripts/catalog-ids.mjs) applies these
   rules. Run the copy on `main`, never one from a PR branch. The steps are in
   [`AGENTS.md`](../../../AGENTS.md#adding-a-catalog-product).

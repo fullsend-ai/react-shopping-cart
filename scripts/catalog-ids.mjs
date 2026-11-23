@@ -105,7 +105,9 @@ export function productsClaim(files, truncated) {
 //   claims:    [{ number, ids }] for every open PR whose ids are readable
 //   excludePr: the caller's own PR. Its ids are judged keep or move (with a
 //              replacement id) instead of being counted as another claim.
-export function decide({ ids, claims, excludePr }) {
+//   unknown:   whether any other open PR changes products.json with ids that
+//              cannot be read (so it is not in `claims`).
+export function decide({ ids, claims, excludePr, unknown = false }) {
   const onMain = new Set(ids);
   const mainMax = ids.length ? Math.max(...ids) : -1;
   const limit = mainMax + OUTLIER_MARGIN;
@@ -130,9 +132,12 @@ export function decide({ ids, claims, excludePr }) {
   const taken = new Set(byId.keys());
   // The smallest free id in (mainMax, limit], or null if there is none. One
   // high claim does not use up the ids below it, and the result is never an
-  // id this script would itself call an outlier.
+  // id this script would itself call an outlier. While some PR's ids are
+  // unknown, a free id below a readable claim may be one that PR holds, so
+  // the search starts above every taken id instead (#125).
   const allocate = () => {
-    for (let id = mainMax + 1; id <= limit; id++) {
+    const start = unknown ? Math.max(mainMax, ...taken) + 1 : mainMax + 1;
+    for (let id = start; id <= limit; id++) {
       if (!taken.has(id)) {
         taken.add(id);
         return id;
@@ -284,7 +289,7 @@ export async function run(argv, { api, out, err }) {
       if (claim.unknown) unknown++;
       lines.push(...claimLines(number, claim));
     }
-    const d = decide({ ids, claims, excludePr });
+    const d = decide({ ids, claims, excludePr, unknown: unknown > 0 });
     // No free id is left within the margin for the next id (or for a
     // replacement id, which is allocated before it).
     if (d.nextId === null) {

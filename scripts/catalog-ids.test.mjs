@@ -327,6 +327,51 @@ test('the next id is the smallest free id, even below a higher claim', () => {
   assert.equal(d.nextId, 22);
 });
 
+test('while some PR has unknown ids, new ids go above every readable claim', async () => {
+  // A gap below a readable claim may be the id an unknown PR holds.
+  const claims = [{ number: 101, ids: [21] }];
+  assert.equal(decide({ ids: [0, 19], claims }).nextId, 20);
+  let d = decide({ ids: [0, 19], claims, unknown: true });
+  assert.equal(d.nextId, 22);
+
+  // Replacements for the excluded PR do the same and never repeat an id.
+  d = decide({
+    ids: [0, 19],
+    claims: [
+      { number: 101, ids: [21, 24] },
+      { number: 102, ids: [21, 22] },
+    ],
+    excludePr: 102,
+    unknown: true,
+  });
+  assert.deepEqual(
+    d.own.map((o) => [o.id, o.keep, o.to]),
+    [
+      [21, false, 25],
+      [22, true, undefined],
+    ],
+  );
+  assert.equal(d.nextId, 26);
+
+  // Still capped at the margin: a readable claim at the margin id leaves none.
+  d = decide({
+    ids: [0, 19],
+    claims: [{ number: 101, ids: [19 + OUTLIER_MARGIN] }],
+    unknown: true,
+  });
+  assert.equal(d.nextId, null);
+
+  // The CLI passes the unknown PR through.
+  const prs = {
+    100: [{ filename: PRODUCTS_PATH, patch: null }],
+    101: [productsFile([21])],
+  };
+  const r = await exec(['next-id'], fakeApi({ prs }).api);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /#100: ids unknown \(patch not available\)/);
+  assert.match(r.out, /next id: 22$/);
+});
+
 test('an excluded PR that must move while another PR holds the margin id gets a free id', async () => {
   const prs = {
     87: [productsFile([20, 19 + OUTLIER_MARGIN])],

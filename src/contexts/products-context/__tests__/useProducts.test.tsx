@@ -119,6 +119,20 @@ describe('[contexts] - products-context', () => {
             style: '',
             title: 'Hydro Flask 21 oz Standard Mouth water bottle',
           },
+          {
+            availableSizes: [],
+            currencyFormat: '$',
+            currencyId: 'USD',
+            description:
+              'Padded 17.3" laptop and 10.1" tablet sleeves, organization panel, expandable side pockets, Red Hat logo',
+            id: 21,
+            installments: 0,
+            isFreeShipping: true,
+            price: 40,
+            sku: 4400000000000001,
+            style: 'RHNLOD-044',
+            title: 'Case Logic 17.3" Laptop Backpack',
+          },
         ]);
       });
 
@@ -134,6 +148,7 @@ describe('[contexts] - products-context', () => {
         expect(products.map((p) => p.title)).toEqual([
           'Red Hat AI Black T-Shirt',
           'Hydro Flask 21 oz Standard Mouth water bottle',
+          'Case Logic 17.3" Laptop Backpack',
         ]);
         expect(filters).toEqual(['M']);
         expect(brandFilters).toEqual(['Red Hat']);
@@ -204,6 +219,7 @@ describe('[contexts] - products-context', () => {
           'Pullover Heather Grey Hoodie Unisex',
           'Hydro Flask 21 oz Standard Mouth water bottle',
           'Black & Red Contrast Hoodie',
+          'Case Logic 17.3" Laptop Backpack',
         ]);
         expect(brandFilters).toEqual(['Red Hat']);
       });
@@ -223,6 +239,7 @@ describe('[contexts] - products-context', () => {
           'Pullover Heather Grey Hoodie Unisex',
           'Hydro Flask 21 oz Standard Mouth water bottle',
           'Black & Red Contrast Hoodie',
+          'Case Logic 17.3" Laptop Backpack',
         ]);
         expect(filters).toEqual(['S']);
       });
@@ -238,6 +255,7 @@ describe('[contexts] - products-context', () => {
         await result.current.filterProductsByBrand(['Red Hat']);
         expect(products.map((p) => p.title)).toEqual([
           'Hydro Flask 21 oz Standard Mouth water bottle',
+          'Case Logic 17.3" Laptop Backpack',
         ]);
       });
 
@@ -255,6 +273,7 @@ describe('[contexts] - products-context', () => {
           'Black Tule Oversized',
           'Red Hat AI Black T-Shirt',
           'Hydro Flask 21 oz Standard Mouth water bottle',
+          'Case Logic 17.3" Laptop Backpack',
         ]);
         expect(brandFilters).toEqual([]);
       });

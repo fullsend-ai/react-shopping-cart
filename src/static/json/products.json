@@ -275,6 +275,19 @@
         "sku": 6212430000000001,
         "style": "RHEU-621243",
         "title": "Black & Red Contrast Hoodie"
+      },
+      {
+        "availableSizes": [],
+        "currencyFormat": "$",
+        "currencyId": "USD",
+        "description": "Padded 17.3\" laptop and 10.1\" tablet sleeves, organization panel, expandable side pockets, Red Hat logo",
+        "id": 21,
+        "installments": 0,
+        "isFreeShipping": true,
+        "price": 40,
+        "sku": 4400000000000001,
+        "style": "RHNLOD-044",
+        "title": "Case Logic 17.3\" Laptop Backpack"
       }
     ]
   }

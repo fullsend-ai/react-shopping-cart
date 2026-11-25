@@ -48,11 +48,11 @@ describe('[components] - Filter', () => {
     expect(screen.getByText('0 Product(s) found')).toBeInTheDocument();
 
     await userEvent.click(screen.getByLabelText('Red Hat'));
-    expect(await screen.findByText('5 Product(s) found')).toBeInTheDocument();
+    expect(await screen.findByText('6 Product(s) found')).toBeInTheDocument();
     expect(screen.getByLabelText('Red Hat')).toBeChecked();
 
     await userEvent.click(screen.getByLabelText('Red Hat'));
-    expect(await screen.findByText('21 Product(s) found')).toBeInTheDocument();
+    expect(await screen.findByText('22 Product(s) found')).toBeInTheDocument();
     expect(screen.getByLabelText('Red Hat')).not.toBeChecked();
   });
 
@@ -208,6 +208,52 @@ describe('[components] - Filter', () => {
           await screen.findByText('Red Hat AI Black T-Shirt')
         ).toBeInTheDocument();
         expect(screen.queryByText(title)).not.toBeInTheDocument();
+      }
+    );
+  });
+
+  describe('Case Logic 17.3" Laptop Backpack', () => {
+    const title = 'Case Logic 17.3" Laptop Backpack';
+
+    const ProductTitles = () => {
+      const { products } = useProducts();
+      return (
+        <ul>
+          {products.map(({ id, title }) => (
+            <li key={id}>{title}</li>
+          ))}
+        </ul>
+      );
+    };
+
+    const setupWithTitles = () =>
+      renderWithThemeProvider(
+        <ProductsProvider>
+          <Filter />
+          <ProductTitles />
+        </ProductsProvider>
+      );
+
+    test('should show the backpack with no filter selected', async () => {
+      setupWithTitles();
+
+      // Toggle the brand filter on and off to list the unfiltered catalog.
+      await userEvent.click(screen.getByLabelText('Red Hat'));
+      await userEvent.click(screen.getByLabelText('Red Hat'));
+      expect(
+        await screen.findByText('Black Tule Oversized')
+      ).toBeInTheDocument();
+      expect(screen.getByText(title)).toBeInTheDocument();
+    });
+
+    // It has no size, so it passes every size filter (decision 0004).
+    test.each([...availableSizes, 'Red Hat'])(
+      'should show the backpack when filtering by %s',
+      async (label) => {
+        setupWithTitles();
+
+        await userEvent.click(screen.getByLabelText(label));
+        expect(await screen.findByText(title)).toBeInTheDocument();
       }
     );
   });

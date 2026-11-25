@@ -846,4 +846,117 @@ describe('[components] - Product', () => {
       expect(screen.getByText('Free shipping')).toBeInTheDocument();
     });
   });
+
+  describe('Case Logic 17.3" Laptop Backpack', () => {
+    const title = 'Case Logic 17.3" Laptop Backpack';
+    const imagePath = (file: string) =>
+      path.resolve(__dirname, '../../../static/products', file);
+    const checksum = (file: string) =>
+      createHash('sha256')
+        .update(readFileSync(imagePath(file)))
+        .digest('hex');
+
+    const getBackpack = async () => {
+      const products = await getProducts();
+      return products.find((p) => p.title === title) as IProduct;
+    };
+
+    const setupWithCart = (...products: IProduct[]) =>
+      renderWithThemeProvider(
+        <CartProvider>
+          {products.map((product) => (
+            <Product product={product} key={product.id} />
+          ))}
+          <Cart />
+        </CartProvider>
+      );
+
+    const cartLineTexts = () =>
+      screen.queryAllByText(/Quantity:/).map((desc) => desc.textContent);
+
+    test('should be in the catalog once with the requested details', async () => {
+      const products = await getProducts();
+      const matches = products.filter((p) => p.title === title);
+
+      expect(matches).toHaveLength(1);
+      expect(matches[0]).toEqual({
+        id: 21,
+        sku: 4400000000000001,
+        title,
+        description:
+          'Padded 17.3" laptop and 10.1" tablet sleeves, organization panel, expandable side pockets, Red Hat logo',
+        availableSizes: [],
+        style: 'RHNLOD-044',
+        price: 40,
+        installments: 0,
+        currencyId: 'USD',
+        currencyFormat: '$',
+        isFreeShipping: true,
+      });
+    });
+
+    test('should have a unique id and a unique safe-integer sku', async () => {
+      const products = await getProducts();
+      const product = await getBackpack();
+
+      expect(Number.isSafeInteger(product.sku)).toBe(true);
+      expect(products.filter(({ id }) => id === product.id)).toHaveLength(1);
+      expect(products.filter(({ sku }) => sku === product.sku)).toHaveLength(1);
+    });
+
+    test('should match the Red Hat brand filter', async () => {
+      const product = await getBackpack();
+
+      expect(matchesBrand(product, 'Red Hat')).toBe(true);
+    });
+
+    test('should have product and cart images', async () => {
+      const { sku } = await getBackpack();
+
+      expect(() =>
+        require(`static/products/${sku}-1-product.webp`)
+      ).not.toThrow();
+      expect(() =>
+        require(`static/products/${sku}-2-product.webp`)
+      ).not.toThrow();
+      expect(() => require(`static/products/${sku}-1-cart.webp`)).not.toThrow();
+    });
+
+    test('should not reuse the front image as the hover image', async () => {
+      const { sku } = await getBackpack();
+
+      expect(checksum(`${sku}-2-product.webp`)).not.toBe(
+        checksum(`${sku}-1-product.webp`)
+      );
+    });
+
+    test('should render with its price and free shipping', async () => {
+      setup({ product: await getBackpack() });
+
+      expect(screen.getByText(title)).toBeInTheDocument();
+      expect(screen.getByText('40')).toBeInTheDocument();
+      expect(screen.getByText('.00')).toBeInTheDocument();
+      expect(screen.getByText('Free shipping')).toBeInTheDocument();
+    });
+
+    test('should show only its style in the cart line, never undefined', async () => {
+      const products = await getProducts();
+      const fleece = products.find(
+        (p) => p.title === 'Craghoppers Grey Half Zip Fleece'
+      ) as IProduct;
+      setupWithCart(await getBackpack(), fleece);
+
+      for (const button of screen.getAllByRole('button', {
+        name: 'Add to cart',
+      })) {
+        await userEvent.click(button);
+      }
+
+      expect(cartLineTexts()).toEqual([
+        'RHNLOD-044 Quantity: 1',
+        'S | RHNL-032 Quantity: 1',
+      ]);
+      expect(screen.queryByText(/undefined/)).not.toBeInTheDocument();
+    });
+  });
 });

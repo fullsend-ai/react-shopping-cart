@@ -352,16 +352,9 @@ test('while some PR has unknown ids, new ids go above every readable claim', asy
     ],
   );
   assert.equal(d.nextId, 26);
+  assert.equal(d.fallback, false);
 
-  // Still capped at the margin: a readable claim at the margin id leaves none.
-  d = decide({
-    ids: [0, 19],
-    claims: [{ number: 101, ids: [19 + OUTLIER_MARGIN] }],
-    unknown: true,
-  });
-  assert.equal(d.nextId, null);
-
-  // The CLI passes the unknown PR through.
+  // The CLI passes the unknown PR through, with no fallback warning.
   const prs = {
     100: [{ filename: PRODUCTS_PATH, patch: null }],
     101: [productsFile([21])],
@@ -369,7 +362,179 @@ test('while some PR has unknown ids, new ids go above every readable claim', asy
   const r = await exec(['next-id'], fakeApi({ prs }).api);
   assert.equal(r.code, 0);
   assert.match(r.out, /#100: ids unknown \(patch not available\)/);
+  assert.doesNotMatch(r.out, /warning/);
   assert.match(r.out, /next id: 22$/);
+});
+
+test('with an ids-unknown PR open, a claim at the margin id still leaves a next id (#126)', async () => {
+  // Nothing fits above the claim at 39, so the smallest free id is used and
+  // flagged instead of refusing (the #124 lockout).
+  let d = decide({
+    ids: [0, 19],
+    claims: [{ number: 1, ids: [19 + OUTLIER_MARGIN] }],
+    unknown: true,
+  });
+  assert.equal(d.nextId, 20);
+  assert.equal(d.fallback, true);
+
+  // Replacements fall back the same way and stay distinct.
+  d = decide({
+    ids: [0, 19],
+    claims: [
+      { number: 1, ids: [20, 19 + OUTLIER_MARGIN] },
+      { number: 2, ids: [20, 21] },
+    ],
+    excludePr: 2,
+    unknown: true,
+  });
+  assert.deepEqual(
+    d.own.map((o) => [o.id, o.keep, o.to]),
+    [
+      [20, false, 22],
+      [21, true, undefined],
+    ],
+  );
+  assert.equal(d.nextId, 23);
+  assert.equal(d.fallback, true);
+
+  // The CLI prints the id, with a warning that names the ids-unknown PRs.
+  const prs = {
+    100: [{ filename: PRODUCTS_PATH, patch: null }],
+    101: [productsFile([19 + OUTLIER_MARGIN])],
+    102: [{ filename: PRODUCTS_PATH }],
+  };
+  const r = await exec(['next-id'], fakeApi({ prs }).api);
+  assert.equal(r.code, 0);
+  assert.match(
+    r.out,
+    /^warning: no free id above every readable claim.*ids unknown PR #100, #102 \(ask a person to check\)$/m,
+  );
+  assert.match(r.out, /next id: 20$/);
+});
+
+// Every id decide() hands out, over small combinations of main ids, readable
+// claims (at the margin id, past it, on main, filling the range), unknown
+// on or off, and an excluded PR present or not (#126).
+test('invariant: allocated ids are free, distinct, within the margin, and present whenever one is free', () => {
+  const cases = [];
+  for (const ids of [[0, 19], [0, 1, 2], []]) {
+    const M = ids.length ? Math.max(...ids) : -1;
+    const L = M + OUTLIER_MARGIN;
+    const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+    const otherSets = [
+      [],
+      [{ number: 10, ids: [M + 1] }],
+      [{ number: 10, ids: [L] }],
+      [{ number: 10, ids: [L + 1] }],
+      [
+        { number: 10, ids: [M + 1, L] },
+        { number: 11, ids: [M + 1, M + 3, L + 1] },
+      ],
+      [{ number: 10, ids: range(M + 1, L - 1) }],
+      [{ number: 10, ids: range(M + 2, L) }],
+      [{ number: 10, ids: range(M + 1, L) }],
+      [{ number: 10, ids: ids.length ? [ids[0], M + 2] : [M + 2] }],
+    ];
+    const ownSets = [
+      null,
+      { number: 12, ids: null },
+      { number: 12, ids: [] },
+      { number: 12, ids: [M + 1] },
+      { number: 12, ids: [M + 1, M + 3, L] },
+      { number: 12, ids: ids.length ? [ids[0], L + 1] : [L + 1] },
+      { number: 9, ids: [M + 1, L] },
+      { number: 10, ids: 'claim' },
+    ];
+    for (const others of otherSets) {
+      for (const own of ownSets) {
+        for (const unknown of [false, true]) {
+          let claims = others;
+          let excludePr;
+          if (own) {
+            excludePr = own.number;
+            if (Array.isArray(own.ids)) {
+              claims = [...others, { number: own.number, ids: own.ids }];
+            }
+          }
+          cases.push({ ids, claims, excludePr, unknown, M, L });
+        }
+      }
+    }
+  }
+
+  for (const { ids, claims, excludePr, unknown, M, L } of cases) {
+    const label = JSON.stringify({ ids, claims, excludePr, unknown });
+    const d = decide({ ids, claims, excludePr, unknown });
+    const onMain = new Set(ids);
+    const othersIds = new Set(
+      claims.filter((c) => c.number !== excludePr).flatMap((c) => c.ids),
+    );
+    const mine = claims.find((c) => c.number === excludePr);
+    // Kept ids, computed independently of decide().
+    const kept = new Set(
+      (mine ? mine.ids : []).filter(
+        (id) =>
+          !onMain.has(id) &&
+          id <= L &&
+          !claims.some((c) => c.number < excludePr && c.ids.includes(id)),
+      ),
+    );
+    const moves = mine ? mine.ids.filter((id) => !kept.has(id)).length : 0;
+    assert.deepEqual(
+      (d.own || []).filter((o) => o.keep).map((o) => o.id),
+      [...kept],
+      label,
+    );
+    let free = 0;
+    for (let id = M + 1; id <= L; id++) {
+      if (!othersIds.has(id) && !kept.has(id)) free++;
+    }
+    // Replacements first, then the next id.
+    const allocated = [
+      ...(d.own || []).filter((o) => !o.keep).map((o) => o.to),
+      d.nextId,
+    ];
+    assert.equal(allocated.length, moves + 1, label);
+    allocated.forEach((a, i) => {
+      // Present exactly when enough ids in (mainMax, limit] are free.
+      assert.equal(a !== null, free > i, label);
+      if (a === null) return;
+      assert.ok(a > M && a <= L, label);
+      assert.ok(!onMain.has(a), label);
+      assert.ok(!othersIds.has(a), label);
+      assert.ok(!kept.has(a), label);
+    });
+    const present = allocated.filter((a) => a !== null);
+    assert.equal(new Set(present).size, present.length, label);
+    if (!unknown) assert.equal(d.fallback, false, label);
+    if (unknown) {
+      // `fallback` is set exactly when some id is not above every readable
+      // claim and kept id within the margin.
+      const floor = Math.max(
+        M,
+        ...[...othersIds].filter((id) => id <= L),
+        ...kept,
+      );
+      assert.equal(
+        d.fallback,
+        present.some((a) => a <= floor),
+        label,
+      );
+      // Each fallback id is the smallest free id in (mainMax, limit].
+      present.forEach((a, i) => {
+        if (a > floor) return;
+        let smallest = M + 1;
+        while (
+          othersIds.has(smallest) ||
+          kept.has(smallest) ||
+          present.slice(0, i).includes(smallest)
+        ) {
+          smallest++;
+        }
+        assert.equal(a, smallest, label);
+      });
+    }
+  }
 });
 
 test('an excluded PR that must move while another PR holds the margin id gets a free id', async () => {
